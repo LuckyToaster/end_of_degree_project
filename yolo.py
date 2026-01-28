@@ -1,6 +1,9 @@
-import torch
+from ultralytics import YOLO
 
-# Example: Loading a YOLOv5 model
-model = torch.hub.load('ultralytics/yolov5', 'yolov5s', pretrained=True)
+# Load a COCO-pretrained YOLO26n model
+model = YOLO("yolo26n.pt")
 
-print('model loaded')
+# Run inference with the YOLO26n model on the 'bus.jpg' image
+results = model("/home/lucky/Pictures/wallpaper/food/breakfast_fruits.jpg")
+results[0].show()
+
