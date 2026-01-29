@@ -24,7 +24,6 @@ import matplotlib.pyplot as plt
 plot_img = results[0].plot(masks=True, boxes=False, labels=False)
 plot_rgb = cv2.cvtColor(plot_img, cv2.COLOR_BGR2RGB)
 
-# Use the 'Qt5Agg' or 'TkAgg' backend for better interaction if needed
 plt.figure(figsize=(10, 6))
 plt.imshow(plot_rgb)
 plt.axis('off')
@@ -38,16 +37,3 @@ plt.show() # This window is fully resizable and has a functional UI
 # key = cv2.waitKey(0) & 0xFF
 # if key == ord('q') or key == 27:
 #     cv2.destroyAllWindows()
-
-
-# # Run inference with bboxes prompt
-# results = model(source, bboxes=[439, 437, 524, 709])
-#
-# # Run inference with points prompt
-# results = model(source, points=[[200, 200]], labels=[1])
-#
-# # Run inference with texts prompt
-# results = model(source, texts="a photo of a dog")
-#
-# # Run inference with bboxes and points and texts prompt at the same time
-# results = model(source, bboxes=[439, 437, 524, 709], points=[[200, 200]], labels=[1], texts="a photo of a dog")
