@@ -2,7 +2,7 @@ env
 runs
 *.pt
 code/*.pt
-docs/images
+docs/images/
 data
 __pycache__
 **/__pycache__
