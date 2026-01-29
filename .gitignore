@@ -1,4 +1,5 @@
 env
-misc
 runs
 *.pt
+code/*.pt
+docs/images
