@@ -25,36 +25,26 @@ class MMFood100K:
             self.df = self.df.drop(columns=['img_suffix'])
             self.df.to_csv(self.csv_path, index=False)
 
-    def __get_present_imgs_ids(self):
+    def _file_img_ids(self):
         return [int(i.name.split('.')[0]) for i in self.imgs_dir.iterdir()]
 
-    def __get_missing_imgs_ids(self):
+    def _missing_img_ids(self):
         if not any(self.imgs_dir.iterdir()): return sorted(range(0, 100_000))
-        return sorted(set(range(0, 100_000)) - set(self.__get_present_imgs_ids()))
+        return sorted(set(range(0, 100_000)) - set(self._file_img_ids()))
 
-    def __log_test(self, testnum, passed):
-        msg = f'{str(self.dir)} TEST {testnum} {'PASSED ✅' if passed else ' FAILED ❌'}'
-        print(msg, file=stdout if passed else stderr)
-
-    async def download_imgs(self, limit=100):
+    async def download_imgs(self, limit=10):
         while True:
-            missing = self.__get_missing_imgs_ids()
+            missing = self._missing_img_ids()
             if not missing: break
+            await download_images(
+                urls = self.df.iloc[missing]['img_url'], 
+                paths = self.df.iloc[missing]['img_path'], 
+                limit = limit, 
+                tqdm_desc = f'{self.imgs_dir}: Downloading {len(missing)} missing images'
+            )
+        return self 
+
+
             desc = f'{self.imgs_dir}: Downloading {len(missing)} missing images'
             urls = self.df.iloc[missing]['img_url']
             paths = self.df.iloc[missing]['img_path']
-            await download_images(urls, paths, limit, desc)
-        print(f'{self.imgs_dir} finished downloading')
-        return self 
-
-    def tests(self):
-        for path in self.df.iloc[self.__get_missing_imgs_ids()]['img_path']:
-            if Path(path).is_file(): 
-                self.__log_test(1, False)
-                break
-        self.__log_test(1, True)
-        present = set(self.__get_present_imgs_ids())
-        missing = set(self.__get_missing_imgs_ids())
-        if len(present.intersection(missing)) > 0: self.__log_test(2, False)
-        else: self.__log_test(2, True)
-        return self
