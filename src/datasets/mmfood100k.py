@@ -45,6 +45,6 @@ class MMFood100K:
         return self 
 
 
-            desc = f'{self.imgs_dir}: Downloading {len(missing)} missing images'
-            urls = self.df.iloc[missing]['img_url']
-            paths = self.df.iloc[missing]['img_path']
+            # desc = f'{self.imgs_dir}: Downloading {len(missing)} missing images'
+            # urls = self.df.iloc[missing]['img_url']
+            # paths = self.df.iloc[missing]['img_path']
