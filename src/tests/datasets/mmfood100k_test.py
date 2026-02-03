@@ -1,11 +1,13 @@
-from sys import stderr, stdout
-from datasets.mmfood100k import MMFood100K
+import pandas as pd
 from pathlib import Path
-import pytest
+from src.datasets.mmfood100k import MMFood100KBuilder
 
-ds = MMFood100K(Path('data'))
-missing_img_paths = ds.df.iloc[ds._missing_img_ids()]['img_path'].tolist()
-present_img_paths = ds.df.iloc[ds._file_img_ids()]['img_path'].tolist()
+data_path = Path('data')
+ds = MMFood100KBuilder(data_path)
+df = pd.read_csv(data_path / 'mm-food-100k/mm-food-100k.csv')
+
+missing_img_paths = df.iloc[ds._missing_img_ids()]['img_path'].tolist()
+present_img_paths = df.iloc[ds._file_img_ids()]['img_path'].tolist()
 
 def test_no_missing_is_present():
     assert all(not Path(p).is_file() for p in missing_img_paths)
