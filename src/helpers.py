@@ -5,8 +5,32 @@ from tqdm.asyncio import tqdm
 from requests import get
 from PIL import Image 
 from sklearn.preprocessing import StandardScaler
+from torch.nn.utils import clip_grad_norm
 
-__all__ = ['download_images', 'download_images_sync', 'downsample_imgs', 'standardize']
+__all__ = ['download_images', 'download_images_sync', 'downsample_imgs', 'standardize', 'train_loop']
+
+
+def train_loop(model, epochs, loader, criterion, optimizer, device):
+    model.train()
+    for epoch in range(epochs): 
+        running_loss = 0.0
+        loop = tqdm(loader, desc=f"Epoch {epoch+1}", leave=True)
+        
+        for inputs, targets in loop:
+            inputs = inputs.to(device)
+            targets = targets.to(device).float()
+            print(f'type: {type(targets)}: {targets}')
+            
+            optimizer.zero_grad()
+            outputs = model(inputs)
+            loss = criterion(outputs, targets)
+            loss.backward()
+            clip_grad_norm_(model.parameters(), max_norm=1.0) # Added this to prevent exploding gradients in regression
+            optimizer.step()
+            
+            running_loss += loss.item()
+            loop.set_postfix(loss=loss.item())
+        print(f"Epoch {epoch+1} Complete - Avg Loss: {running_loss/len(loader):.4f}")
 
 
 def standardize(train_df, test_df):

@@ -1,7 +1,7 @@
-import fireducks.pandas as pd
+import pandas as pd
 from pathlib import Path
-from mmfood100k.mmfood100k_builder import MMFood100KBuilder
-from mmfood100k.mmfood100k_dataset import MMFood100KDataset
+from src.mmfood100k.builder import MMFood100KBuilder
+from src.mmfood100k.dataset import MMFood100KDataset
 
 data_path = Path('data')
 builder = MMFood100KBuilder(data_path)

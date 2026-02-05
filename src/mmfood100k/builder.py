@@ -1,4 +1,4 @@
-import fireducks.pandas as pd
+import pandas as pd
 from pathlib import Path
 import json
 from helpers import download_images
