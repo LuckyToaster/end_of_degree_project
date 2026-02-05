@@ -6,3 +6,5 @@ async def main():
     await MMFood100KBuilder(Path('data')).download_imgs(limit=10)
 
 asyncio.run(main())
+
+
