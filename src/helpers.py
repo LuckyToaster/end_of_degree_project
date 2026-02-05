@@ -5,9 +5,11 @@ from tqdm.asyncio import tqdm
 from requests import get
 from PIL import Image 
 from sklearn.preprocessing import StandardScaler
-from torch.nn.utils import clip_grad_norm
+from torch.nn.utils import clip_grad_norm_
+from pathlib import Path
+from os import scandir
 
-__all__ = ['download_images', 'download_images_sync', 'downsample_imgs', 'standardize', 'train_loop']
+__all__ = ['download_images', 'download_images_sync', 'downsample_imgs', 'check_corrupted_imgs', 'standardize', 'train_loop']
 
 
 def train_loop(model, epochs, loader, criterion, optimizer, device):
@@ -19,7 +21,6 @@ def train_loop(model, epochs, loader, criterion, optimizer, device):
         for inputs, targets in loop:
             inputs = inputs.to(device)
             targets = targets.to(device).float()
-            print(f'type: {type(targets)}: {targets}')
             
             optimizer.zero_grad()
             outputs = model(inputs)
@@ -37,6 +38,23 @@ def standardize(train_df, test_df):
     scaler = StandardScaler()
     scaler.set_output(transform="pandas")
     return scaler.fit_transform(train_df), scaler.transform(test_df)
+
+
+def check_corrupted_imgs(imgs_dir):
+    corrupted = []
+    total = sum(1 for entry in scandir(imgs_dir) if entry.is_file())
+    loop = tqdm(Path(imgs_dir).iterdir(), total=total, desc='Checking for corrupted images')
+    for p in loop:
+        try:
+            with Image.open(p) as img:
+                img.verify() 
+                with Image.open(p) as img2: 
+                    img2.load() 
+        except Exception as e: corrupted.append((str(p), str(e)))
+    return corrupted 
+
+def count_files(directory):
+    return sum(1 for entry in scandir(directory) if entry.is_file())
 
 
 async def download_images(urls, paths, limit, tqdm_desc):

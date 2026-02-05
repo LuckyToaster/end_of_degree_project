@@ -1,0 +1,9 @@
+[
+    ('data/mm-food-100k/imgs/62581.jpg', 'image file is truncated (8 bytes not processed)'), 
+    ('data/mm-food-100k/imgs/55375.jpg', 'image file is truncated (37 bytes not processed)'), 
+    ('data/mm-food-100k/imgs/11390.png', 'image file is truncated (191 bytes not processed)'), 
+    ('data/mm-food-100k/imgs/20602.jpg', 'image file is truncated (82 bytes not processed)'), 
+    ('data/mm-food-100k/imgs/22672.jpg', 'image file is truncated (9 bytes not processed)'), 
+    ('data/mm-food-100k/imgs/74802.jpg', 'image file is truncated (54 bytes not processed)'), 
+    ('data/mm-food-100k/imgs/66867.jpg', 'image file is truncated (33 bytes not processed)')
+]

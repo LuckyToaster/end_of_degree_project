@@ -1,7 +1,7 @@
 import pandas as pd
 from pathlib import Path
 import json
-from helpers import download_images
+from src.helpers import download_images
 
 
 class MMFood100KBuilder:

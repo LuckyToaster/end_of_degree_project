@@ -16,13 +16,9 @@ class MMFood100KDataset(Dataset):
         return len(self.df)
 
     def __getitem__(self, idx):
-        try:
-            input = Image.open(self.df.iloc[idx][self.input]).convert('RGB')
-            targets = tensor(self.df.iloc[idx][self.targets].values.astype('float32'))
+        input = Image.open(self.df.iloc[idx][self.input]).convert('RGB')
+        targets = tensor(self.df.iloc[idx][self.targets].values.astype('float32'))
 
-            if self.transform: 
-                input = self.transform(input)
-            return input, targets
-        except Exception as e: print(e, file=stderr)
-            # new_idx = random.randint(0, len(self.df) - 1)
-            # return self.__getitem__(new_idx)
+        if self.transform: 
+            input = self.transform(input)
+        return input, targets

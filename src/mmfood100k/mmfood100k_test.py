@@ -1,7 +1,10 @@
 import pandas as pd
 from pathlib import Path
+import torch 
 from src.mmfood100k.builder import MMFood100KBuilder
 from src.mmfood100k.dataset import MMFood100KDataset
+from src.models.efficientnet import get_model
+
 
 data_path = Path('data')
 builder = MMFood100KBuilder(data_path)
@@ -21,5 +24,11 @@ def test_mutual_exclusion():
     assert len(present.intersection(missing)) == 0
 
 def test_dataset_iterable_no_errors():
-    dataset = MMFood100KDataset(df)
-    [(i, t) for i,t in dataset]
+    _, transforms = get_model()
+    dataset = MMFood100KDataset(df, transform=transforms)
+    
+    for i in range(0, 20_000):
+        img, _ = dataset[i]
+        assert img.shape == (3, 224, 224)
+        assert not torch.isnan(img).any()
+
