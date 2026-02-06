@@ -1,13 +1,11 @@
 import pandas as pd
 from pathlib import Path
 import json
-from src.helpers import download_images
+from src.helpers import download_images, check_corrupted_imgs, file_count
 
 
 class MMFood100KBuilder:
     URL = 'hf://datasets/Codatta/MM-Food-100K/MM-Food-100K.csv' # https://huggingface.co/datasets/Codatta/MM-Food-100K
-    PIXEL_LIMIT = 89_478_485 # matches PIL's
-    MAX_DIM = 2000  
 
     def __init__(self, data_path):
         self.dir = data_path / 'mm-food-100k'
@@ -49,3 +47,16 @@ class MMFood100KBuilder:
                 f'{self.imgs_dir}: Downloading {len(missing)} missing images'
             )
         return self 
+
+    async def fix_corrupted_imgs(self):
+        corrupted = check_corrupted_imgs(self.imgs_dir)
+        if not corrupted: 
+            print('No Corrupted Images ✅')
+            return 
+
+        print(f'CORRUPTED IMAGES: {corrupted}')
+        paths = [p for p, _ in corrupted]
+        df = pd.read_csv(self.csv_path)
+        urls = df[ df['img_path'].isin(paths) ]['img_url']
+        await download_images(urls, paths, 10, 'Re-Downloading corrupted images')
+

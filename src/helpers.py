@@ -9,11 +9,12 @@ from torch.nn.utils import clip_grad_norm_
 from pathlib import Path
 from os import scandir
 
-__all__ = ['download_images', 'download_images_sync', 'downsample_imgs', 'check_corrupted_imgs', 'standardize', 'train_loop']
+__all__ = ['download_images', 'download_images_sync', 'downsample_imgs', 'check_corrupted_imgs', 'standardize', 'train_loop', 'file_count']
 
 
 def train_loop(model, epochs, loader, criterion, optimizer, device):
     model.train()
+    running_losses = []
     for epoch in range(epochs): 
         running_loss = 0.0
         loop = tqdm(loader, desc=f"Epoch {epoch+1}", leave=True)
@@ -26,12 +27,91 @@ def train_loop(model, epochs, loader, criterion, optimizer, device):
             outputs = model(inputs)
             loss = criterion(outputs, targets)
             loss.backward()
-            clip_grad_norm_(model.parameters(), max_norm=1.0) # Added this to prevent exploding gradients in regression
+            # Added this to prevent exploding gradients in regression
+            clip_grad_norm_(model.parameters(), max_norm=1.0) 
             optimizer.step()
             
             running_loss += loss.item()
+            running_losses.append(running_loss)
             loop.set_postfix(loss=loss.item())
         print(f"Epoch {epoch+1} Complete - Avg Loss: {running_loss/len(loader):.4f}")
+    return running_losses
+
+
+
+def train(dataloader, model, loss_fn, optimizer, device):
+    size = len(dataloader.dataset)
+    model.train()
+    for batch, (X, y) in enumerate(dataloader):
+        X, y = X.to(device), y.to(device)
+        # Compute prediction error
+        pred = model(X)
+        loss = loss_fn(pred, y)
+        # Backpropagation
+        loss.backward()
+        optimizer.step()
+        optimizer.zero_grad()
+
+        if batch % 100 == 0:
+            loss, current = loss.item(), (batch + 1) * len(X)
+            print(f"loss: {loss:>7f}  [{current:>5d}/{size:>5d}]")
+
+
+def train_model(device, model, dataloaders, epochs, criterion, optimizer):
+    history = {'loss': [], 'accuracy': [], 'val_loss': [], 'val_accuracy': []}
+    for epoch in range(epochs):
+        # training phase
+        model.train()
+        train_loss = 0.0
+        train_correct = 0
+        train_total = 0
+        stopper = EarlyStopper(patience, min_delta) 
+
+        for batchX, batchY in dataloaders['train']:
+            batchX, batchY = batchX.to(device), batchY.to(device)
+            optimizer.zero_grad()
+            outputs = model(batchX)
+            loss = criterion(outputs, batchY)
+            loss.backward()
+            optimizer.step()
+
+            train_loss += loss.item()
+            _, predicted = max(outputs.data, 1)
+            train_total += batchY.size(0)
+            train_correct += (predicted == batchY).sum().item()
+
+        # validation phase
+        model.eval()
+        val_loss = 0.0
+        val_correct = 0
+        val_total = 0
+
+        with no_grad():
+            for batchX, batchY in dataloaders['val']:
+                batchX, batchY = batchX.to(device), batchY.to(device)
+                outputs = model(batchX)
+                loss = criterion(outputs, batchY)
+
+                val_loss += loss.item()
+                _, predicted = max(outputs.data, 1)
+                val_total += batchY.size(0)
+                val_correct += (predicted == batchY).sum().item()
+
+        # Calculate averages
+        train_loss /= len(dataloaders['train'])
+        val_loss /= len(dataloaders['val'])
+        train_accuracy = train_correct / train_total
+        val_accuracy = val_correct / val_total
+        # Store history
+        history['loss'].append(train_loss)
+        history['accuracy'].append(train_accuracy)
+        history['val_loss'].append(val_loss)
+        history['val_accuracy'].append(val_accuracy)
+        print(f'Epoch [{epoch+1}/{epochs}] - Loss: {train_loss:.4f}, Acc: {train_accuracy:.4f}, Val Loss: {val_loss:.4f}, Val Acc: {val_accuracy:.4f}')
+        # stop early if need be
+        if stopper.early_stop(val_loss): break
+    return history
+
 
 
 def standardize(train_df, test_df):
@@ -40,11 +120,9 @@ def standardize(train_df, test_df):
     return scaler.fit_transform(train_df), scaler.transform(test_df)
 
 
-def check_corrupted_imgs(imgs_dir):
+def check_corrupted_imgs(imgs_dir: Path):
     corrupted = []
-    total = sum(1 for entry in scandir(imgs_dir) if entry.is_file())
-    loop = tqdm(Path(imgs_dir).iterdir(), total=total, desc='Checking for corrupted images')
-    for p in loop:
+    for p in tqdm(imgs_dir.iterdir(), total=file_count(imgs_dir), desc='Checking for corrupted images'): 
         try:
             with Image.open(p) as img:
                 img.verify() 
@@ -53,7 +131,8 @@ def check_corrupted_imgs(imgs_dir):
         except Exception as e: corrupted.append((str(p), str(e)))
     return corrupted 
 
-def count_files(directory):
+
+def file_count(directory: Path):
     return sum(1 for entry in scandir(directory) if entry.is_file())
 
 
