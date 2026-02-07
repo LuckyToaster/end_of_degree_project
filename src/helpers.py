@@ -7,9 +7,11 @@ from PIL import Image
 from sklearn.preprocessing import StandardScaler
 from torch.nn.utils import clip_grad_norm_
 from pathlib import Path
-from os import scandir
+from os import scandir, path
+from pathlib import Path
+import torch
 
-__all__ = ['download_images', 'download_images_sync', 'downsample_imgs', 'check_corrupted_imgs', 'standardize', 'train_loop', 'file_count']
+__all__ = ['download_images', 'download_images_sync', 'downsample_imgs', 'check_corrupted_imgs', 'standardize', 'train_loop', 'file_count', 'downsample_img']
 
 
 def train_loop(model, epochs, loader, criterion, optimizer, device):
@@ -39,6 +41,21 @@ def train_loop(model, epochs, loader, criterion, optimizer, device):
     return epochs_losses
 
 
+def test(dataloader, model, loss_fn, device):
+    size = len(dataloader.dataset)
+    num_batches = len(dataloader)
+    model.eval()
+    test_loss, correct = 0, 0
+    with torch.no_grad():
+        for X, y in dataloader:
+            X, y = X.to(device), y.to(device)
+            pred = model(X)
+            test_loss += loss_fn(pred, y).item()
+            correct += (pred.argmax(1) == y).type(torch.float).sum().item()
+    test_loss /= num_batches
+    correct /= size
+    print(f"Test Error: \n Accuracy: {(100*correct):>0.1f}%, Avg loss: {test_loss:>8f} \n")
+
 
 def train(dataloader, model, loss_fn, optimizer, device):
     size = len(dataloader.dataset)
@@ -58,67 +75,37 @@ def train(dataloader, model, loss_fn, optimizer, device):
             print(f"loss: {loss:>7f}  [{current:>5d}/{size:>5d}]")
 
 
-def train_model(device, model, dataloaders, epochs, criterion, optimizer):
-    history = {'loss': [], 'accuracy': [], 'val_loss': [], 'val_accuracy': []}
-    for epoch in range(epochs):
-        # training phase
-        model.train()
-        train_loss = 0.0
-        train_correct = 0
-        train_total = 0
-        stopper = EarlyStopper(patience, min_delta) 
-
-        for batchX, batchY in dataloaders['train']:
-            batchX, batchY = batchX.to(device), batchY.to(device)
-            optimizer.zero_grad()
-            outputs = model(batchX)
-            loss = criterion(outputs, batchY)
-            loss.backward()
-            optimizer.step()
-
-            train_loss += loss.item()
-            _, predicted = max(outputs.data, 1)
-            train_total += batchY.size(0)
-            train_correct += (predicted == batchY).sum().item()
-
-        # validation phase
-        model.eval()
-        val_loss = 0.0
-        val_correct = 0
-        val_total = 0
-
-        with no_grad():
-            for batchX, batchY in dataloaders['val']:
-                batchX, batchY = batchX.to(device), batchY.to(device)
-                outputs = model(batchX)
-                loss = criterion(outputs, batchY)
-
-                val_loss += loss.item()
-                _, predicted = max(outputs.data, 1)
-                val_total += batchY.size(0)
-                val_correct += (predicted == batchY).sum().item()
-
-        # Calculate averages
-        train_loss /= len(dataloaders['train'])
-        val_loss /= len(dataloaders['val'])
-        train_accuracy = train_correct / train_total
-        val_accuracy = val_correct / val_total
-        # Store history
-        history['loss'].append(train_loss)
-        history['accuracy'].append(train_accuracy)
-        history['val_loss'].append(val_loss)
-        history['val_accuracy'].append(val_accuracy)
-        print(f'Epoch [{epoch+1}/{epochs}] - Loss: {train_loss:.4f}, Acc: {train_accuracy:.4f}, Val Loss: {val_loss:.4f}, Val Acc: {val_accuracy:.4f}')
-        # stop early if need be
-        if stopper.early_stop(val_loss): break
-    return history
-
-
-
 def standardize(train_df, test_df):
     scaler = StandardScaler()
     scaler.set_output(transform="pandas")
     return scaler.fit_transform(train_df), scaler.transform(test_df)
+
+from concurrent.futures import ThreadPoolExecutor
+from itertools import repeat
+from os import cpu_count
+
+def downsample_imgs(src_paths, dst_paths, size):
+    src_dir = str(Path(src_paths[0]).parent)
+    dst_dir = str(Path(dst_paths[0]).parent)
+    # loop = tqdm(zip(src_paths, dst_paths), total=len(src_paths), desc=f'{src_dir} => {dst_dir}: Downsampling to {size}x{size}')
+    # [downsample_img(o, n, size) for o,n in loop]
+    with ThreadPoolExecutor(max_workers=cpu_count()) as executor:
+        # executor.map(downsample_img, src_paths, dst_paths, repeat(size))
+        list(tqdm(
+            executor.map(downsample_img, src_paths, dst_paths, repeat(size)),
+            total=len(src_paths),
+            desc=f'{src_dir} => {dst_dir}: Downsampling Images'
+        ))
+
+
+def downsample_img(old_path, new_path, size):
+    try:
+        with Image.open(old_path) as img:
+            img = img.convert("RGB")
+            img.thumbnail((size,size), resample=Image.LANCZOS)
+            img.save(new_path, "JPEG", quality=95)
+    except Exception as e:
+        print(f"Error processing {old_path}: {e}")
 
 
 def check_corrupted_imgs(imgs_dir: Path):
@@ -155,10 +142,12 @@ def download_images_sync(urls, paths):
         _dwn_img_sync(url, path)
 
 
-def downsample_imgs(img_dir_path, pixel_limit=89_478_485, max_dim=2000):
+def downsample_imgs_for_pillow(img_dir_path):
     '''
-        Downsammple keeping aspect ratio all images in a directory larger than a pixel_limit
+        Downsammple keeping aspect ratio all images in a directory larger than PIL's pixel_limit
     '''
+    pixel_limit=89_478_485
+    max_dim=2000
     for img_path in img_dir_path.iterdir():
         try:
             with Image.open(img_path) as img:

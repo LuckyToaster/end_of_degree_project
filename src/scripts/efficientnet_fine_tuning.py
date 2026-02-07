@@ -11,7 +11,7 @@ from src.models.efficientnet import get_model
 torch.cuda.empty_cache() if torch.cuda.is_available() else print('NO CUDA 🙉')
 DEVICE = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 SEED = 1
-EPOCHS = 1
+EPOCHS = 20
 BATCH_SIZE = 32
 LR = 1e-4
 TARGETS = ['fat_g', 'carb_g', 'protein_g']
@@ -27,8 +27,8 @@ if __name__ == '__main__':
     print(train_df[TARGETS].describe()) 
     train_df[TARGETS], test_df[TARGETS] = standardize(train_df[TARGETS], test_df[TARGETS])
 
-    train_ds = MMFood100KDataset(train_df, transform=transforms)
-    test_ds = MMFood100KDataset(test_df, transform=transforms)
+    train_ds = MMFood100KDataset(train_df, transform=transforms, input='imgs_224x224_path')
+    test_ds = MMFood100KDataset(test_df, transform=transforms, input='imgs_224x224_path')
 
     train_loader = DataLoader(train_ds, batch_size=BATCH_SIZE, shuffle=True, num_workers=8, pin_memory=True, persistent_workers=True)
     test_loader = DataLoader(test_ds, batch_size=BATCH_SIZE, shuffle=True, num_workers=8, pin_memory=True, persistent_workers=True)
