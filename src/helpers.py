@@ -20,8 +20,8 @@ def train_loop(model, epochs, loader, criterion, optimizer, device):
         loop = tqdm(loader, desc=f"Epoch {epoch+1}", leave=True)
         
         for inputs, targets in loop:
-            inputs = inputs.to(device)
-            targets = targets.to(device).float()
+            inputs = inputs.to(device, non_blocking=True)
+            targets = targets.to(device, non_blocking=True).float()
             
             optimizer.zero_grad()
             outputs = model(inputs)
