@@ -14,7 +14,7 @@ __all__ = ['download_images', 'download_images_sync', 'downsample_imgs', 'check_
 
 def train_loop(model, epochs, loader, criterion, optimizer, device):
     model.train()
-    running_losses = []
+    epochs_losses = []
     for epoch in range(epochs): 
         running_loss = 0.0
         loop = tqdm(loader, desc=f"Epoch {epoch+1}", leave=True)
@@ -32,10 +32,11 @@ def train_loop(model, epochs, loader, criterion, optimizer, device):
             optimizer.step()
             
             running_loss += loss.item()
-            running_losses.append(running_loss)
             loop.set_postfix(loss=loss.item())
+
+        epochs_losses.append(running_loss / len(loader))
         print(f"Epoch {epoch+1} Complete - Avg Loss: {running_loss/len(loader):.4f}")
-    return running_losses
+    return epochs_losses
 
 
 
