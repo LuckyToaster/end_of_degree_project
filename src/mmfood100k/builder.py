@@ -8,48 +8,53 @@ from src.helpers import download_images, check_corrupted_imgs, downsample_imgs
 class MMFood100KBuilder:
     URL = 'hf://datasets/Codatta/MM-Food-100K/MM-Food-100K.csv' # https://huggingface.co/datasets/Codatta/MM-Food-100K
 
-    def __init__(self, data_path):
+    def __init__(self, data_path, img_size):
         self.dir = data_path / 'mm-food-100k'
         self.csv_path = self.dir / 'mm-food-100k.csv'
         self.imgs_dir = self.dir / 'imgs'
+        self.resized_imgs_dir = self.dir / 'resized_imgs'
+        self.img_size = img_size
 
         self.dir.mkdir(parents=True, exist_ok=True)
         self.imgs_dir.mkdir(parents=True, exist_ok=True)
-        if self.csv_path.is_file(): return 
+        self.resized_imgs_dir.mkdir(parents=True, exist_ok=True)
+
+        if self.csv_path.is_file(): 
+            self.df = pd.read_csv(self.csv_path)
+            return 
 
         print(f'Downloading {self.csv_path}')
-        df = pd.read_csv(self.URL)
-        df = df.rename(columns={'image_url': 'img_url'})
-        df['img_suffix'] = df['img_url'].apply(lambda x: Path(x).suffix)
-        df['img_path'] = str(self.imgs_dir) + '/' + df.index.astype(str) + df['img_suffix']
+        self.df = pd.read_csv(self.URL)
+        self.df = self.df.rename(columns={'image_url': 'img_url'})
+        img_suffixes = self.df['img_url'].apply(lambda x: Path(x).suffix).tolist()
+        self.df['img_path'] = str(self.imgs_dir) + '/' + self.df.index.astype(str) + img_suffixes
+        self.df['resized_img_path'] = str(self.resized_imgs_dir) + '/' + self.df.index.astype(str) + '.jpeg'
         target_cols = ['fat_g', 'carb_g', 'protein_g', 'kcal']
         target_names = ['fat_g', 'carbohydrate_g', 'protein_g', 'calories_kcal']
-        df[target_cols] = df['nutritional_profile'].apply(lambda x: pd.Series(json.loads(x)))[target_names]
-        df[target_cols] = df[target_cols].astype(float)
-        df = df.drop(columns=['img_suffix', 'camera_or_phone_prob', 'nutritional_profile'])
-        df.to_csv(self.csv_path, index=False)
+        self.df[target_cols] = self.df['nutritional_profile'].apply(lambda x: pd.Series(json.loads(x)))[target_names]
+        self.df[target_cols] = self.df[target_cols].astype(float)
+        self.df = self.df.drop(columns=['camera_or_phone_prob', 'nutritional_profile'])
+
+        print(f'Saving wrangled CSV')
+        self.df.to_csv(self.csv_path, index=False)
 
 
-    def _file_img_ids(self):
-        return [int(i.name.split('.')[0]) for i in self.imgs_dir.iterdir()]
+    def _file_img_ids(self, dir):
+        return [int(i.name.split('.')[0]) for i in dir.iterdir()]
 
-
-    def _missing_img_ids(self):
-        if not any(self.imgs_dir.iterdir()): return sorted(range(0, 100_000))
-        return sorted(set(range(0, 100_000)) - set(self._file_img_ids()))
+    def _missing_img_ids(self, dir):
+        if not any(dir.iterdir()): return sorted(range(0, 100_000))
+        return sorted(set(range(0, 100_000)) - set(self._file_img_ids(dir)))
 
 
     async def download_imgs(self, limit=10):
-        df = pd.read_csv(self.csv_path)
+        self.df = pd.read_csv(self.csv_path)
         while True:
-            missing = self._missing_img_ids()
+            missing = self._missing_img_ids(self.imgs_dir)
             if not missing: break
-            await download_images(
-                df.iloc[missing]['img_url'], 
-                df.iloc[missing]['img_path'], 
-                limit, 
-                f'{self.imgs_dir}: Downloading {len(missing)} missing images'
-            )
+            urls = self.df.iloc[missing]['img_url'].tolist()
+            paths = self.df.iloc[missing]['img_path'].tolist()
+            await download_images(urls, paths, limit, f'{self.imgs_dir}: Downloading missing images')
         return self 
 
 
@@ -60,22 +65,12 @@ class MMFood100KBuilder:
             return 
 
         print(f'CORRUPTED IMAGES: {corrupted}')
-        paths = [p for p, _ in corrupted]
         df = pd.read_csv(self.csv_path)
-        urls = df[ df['img_path'].isin(paths) ]['img_url']
-        await download_images(urls, paths, 10, 'Re-Downloading corrupted images')
+        corrupted_paths = [p for p,_ in corrupted]
+        urls = df[df['img_path'].isin(corrupted_paths)]['img_url']
+        await download_images(urls, corrupted_paths, 10, 'Re-Downloading corrupted images')
 
 
-    def downsample_imgs(self, size):
-        self.img_dir_downsampled = self.dir/f'imgs_{size}x{size}'
-        self.img_dir_downsampled.mkdir(parents=True, exist_ok=True)
-        
-        # add new img_path columns to csv and save it
-        newcolname = f'img_{size}x{size}_path'
+    def resize_images(self):
         df = pd.read_csv(self.csv_path)
-        df[newcolname] = str(self.img_dir_downsampled) + '/' + df.index.astype(str) + '.jpeg'
-        df.to_csv(self.csv_path, index=False)
-
-        paths = df['img_path'].tolist()
-        new_paths = df[newcolname].tolist()
-        downsample_imgs(paths, new_paths, size)
+        downsample_imgs(df['img_path'].tolist(), df['resized_img_path'].tolist(), self.img_size)

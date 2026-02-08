@@ -19,7 +19,7 @@ def train_loop(model, epochs, loader, criterion, optimizer, device):
     epochs_losses = []
     for epoch in range(epochs): 
         running_loss = 0.0
-        loop = tqdm(loader, desc=f"Epoch {epoch+1}", leave=True)
+        loop = tqdm(loader, desc=f"Epoch {epoch+1}", leave=True, unit='batch')
         
         for inputs, targets in loop:
             inputs = inputs.to(device, non_blocking=True)
@@ -87,14 +87,12 @@ from os import cpu_count
 def downsample_imgs(src_paths, dst_paths, size):
     src_dir = str(Path(src_paths[0]).parent)
     dst_dir = str(Path(dst_paths[0]).parent)
-    # loop = tqdm(zip(src_paths, dst_paths), total=len(src_paths), desc=f'{src_dir} => {dst_dir}: Downsampling to {size}x{size}')
-    # [downsample_img(o, n, size) for o,n in loop]
     with ThreadPoolExecutor(max_workers=cpu_count()) as executor:
-        # executor.map(downsample_img, src_paths, dst_paths, repeat(size))
         list(tqdm(
             executor.map(downsample_img, src_paths, dst_paths, repeat(size)),
             total=len(src_paths),
-            desc=f'{src_dir} => {dst_dir}: Downsampling Images'
+            esc=f'{src_dir} => {dst_dir}: Downsampling Images',
+            unit='img'
         ))
 
 
@@ -110,7 +108,7 @@ def downsample_img(old_path, new_path, size):
 
 def check_corrupted_imgs(imgs_dir: Path):
     corrupted = []
-    for p in tqdm(imgs_dir.iterdir(), total=file_count(imgs_dir), desc='Checking for corrupted images'): 
+    for p in tqdm(imgs_dir.iterdir(), total=file_count(imgs_dir), desc='Checking for corrupted images', unit='img'): 
         try:
             with Image.open(p) as img:
                 img.verify() 
