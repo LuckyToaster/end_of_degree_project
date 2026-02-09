@@ -1,9 +1,8 @@
+from src.helpers.images import download_images, resize_images, get_corrupted_images
+from src.helpers.misc import remove_files, missing_ids
 import pandas as pd
 from pathlib import Path
 import json
-from src.helpers.images import download_images, resize_images, check_corrupted_images
-from src.helpers.indexing import missing_ids
-from src.helpers.misc import remove_files
 
 
 class MMFood100KBuilder:
@@ -39,7 +38,6 @@ class MMFood100KBuilder:
         print(f'Saving wrangled CSV')
         self.df.to_csv(self.csv_path, index=False)
 
-
     async def download_imgs(self, limit=10):
         while True:
             missing = missing_ids(self.imgs_dir, len(self.df))
@@ -49,9 +47,8 @@ class MMFood100KBuilder:
             await download_images(urls, paths, limit, f'{self.imgs_dir} => Downloading any missing images')
         return self 
 
-
     async def fix_corrupted_imgs(self, drop=True):
-        corrupted_paths = [path for path,_ in check_corrupted_images(self.imgs_dir)]
+        corrupted_paths = [path for path,_ in get_corrupted_images(self.imgs_dir)]
         if not corrupted_paths: 
             print('No Corrupted Images ✅')
             return 
@@ -63,7 +60,6 @@ class MMFood100KBuilder:
         else:
             urls = self.df[self.df['img_path'].isin(corrupted_paths)]['img_url']
             await download_images(urls, corrupted_paths, 10, f'{self.imgs_dir} => Re-Downloading corrupted images')
-
 
     def resize_images(self):
         src_paths = self.df['img_path'].tolist()

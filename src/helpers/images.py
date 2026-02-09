@@ -1,5 +1,6 @@
 from concurrent.futures import ThreadPoolExecutor
-import sys, aiofiles
+import aiofiles
+from sys import stderr, stdout
 from asyncio import Semaphore, create_task
 from aiohttp import ClientSession
 from tqdm.asyncio import tqdm
@@ -8,8 +9,9 @@ from itertools import repeat
 from os import cpu_count
 from torchvision import io
 from torchvision.transforms import v2, InterpolationMode
+import torch
 
-__all__ = ['resize_images', 'check_corrupted_images', 'download_images']
+__all__ = ['resize_images', 'get_corrupted_images', 'download_images']
 
 
 def resize_images(src_paths, dst_paths, size=256, bicubic=True):
@@ -22,12 +24,13 @@ def resize_images(src_paths, dst_paths, size=256, bicubic=True):
         list(tqdm(
             executor.map(_resize_img, src_paths, dst_paths, repeat(size), repeat(bicubic)),
             total=len(src_paths),
-            desc=f'{src_dir} => {dst_dir}: Re-Sizing Images',
-            unit='img'
+            desc=f'{src_dir} => Re-Sizing Images to {dst_dir}',
+            unit='img',
+            file=stdout
         ))
 
 
-def check_corrupted_images(imgs_dir: Path):
+def get_corrupted_images(imgs_dir: Path):
     ''' 
         open images in image dir with tv to verify integrity 
     '''
@@ -37,7 +40,8 @@ def check_corrupted_images(imgs_dir: Path):
             executor.map(_check_corrupted_img, paths),
             total=len(paths),
             desc=f'{str(imgs_dir)} => Verifying Integrity',
-            unit='img'
+            unit='img',
+            file=stdout
         ))
     return [r for r in results if r is not None]
 
@@ -49,7 +53,7 @@ async def download_images(urls, paths, limit, tqdm_desc):
     async with ClientSession() as sesh:         
         sem = Semaphore(limit) if limit else None
         tasks = [create_task(_dwn_img_semaphore(sesh, u, p, sem)) for u, p in zip(urls, paths)]
-        await tqdm.gather(*tasks, desc=tqdm_desc, total=len(urls), unit="img")
+        await tqdm.gather(*tasks, desc=tqdm_desc, total=len(urls), unit="img", file=stdout)
 
 
 '''
@@ -58,10 +62,14 @@ async def download_images(urls, paths, limit, tqdm_desc):
 
 def _resize_img(src_path, dst_path, size, bicubic):
     img = io.read_image(str(src_path), mode=io.ImageReadMode.RGB)
-    interpolation = InterpolationMode.BICUBIC if bicubic else InterpolationMode.BILINEAR
-    transform = v2.Resize(size=size, interpolation=interpolation, antialias=True) # keeps aspect ration
+    transform = v2.Resize(size=size, interpolation=InterpolationMode.BICUBIC if bicubic else InterpolationMode.BILINEAR, antialias=True) # keeps aspect ration
     img = transform(img)
-    io.write_jpeg(img.cpu(), dst_path, quality=95)
+
+    if img.ndim == 4: img = img.squeeze(0)  # [1, 3, H, W] -> [3, H, W]
+    elif img.ndim == 2: img = img.unsqueeze(0).repeat(3, 1, 1) # [H, W] -> [3, H, W]
+    if img.shape[0] != 3: img = img.repeat(3, 1, 1)[:3, :, :] # If it's something bizarre like [1, H, W] after all that
+
+    io.write_jpeg(img.as_subclass(torch.Tensor).to(torch.uint8).cpu(), dst_path, quality=95)
 
 
 def _check_corrupted_img(path: str):
@@ -85,5 +93,5 @@ async def _dwn_img(session, url, dst_path):
             data = await res.read()
             async with aiofiles.open(dst_path, mode='wb') as f: 
                 await f.write(data)
-    except Exception as e: 
-        print(f'{url}: {e}', file=sys.stderr)
+    except (RuntimeError, Exception) as e: 
+        print(f'{url} => {e}', file=stderr)
