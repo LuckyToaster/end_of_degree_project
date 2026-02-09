@@ -37,7 +37,7 @@ def get_corrupted_images(imgs_dir: Path):
     paths = list(map(lambda p: str(p), imgs_dir.iterdir()))
     with ThreadPoolExecutor(max_workers=cpu_count()) as executor:
         results = list(tqdm(
-            executor.map(_check_corrupted_img, paths),
+            executor.map(_check_corrupted_img_pil, paths),
             total=len(paths),
             desc=f'{str(imgs_dir)} => Verifying Integrity',
             unit='img',
@@ -61,15 +61,19 @@ async def download_images(urls, paths, limit, tqdm_desc):
 '''
 
 def _resize_img(src_path, dst_path, size, bicubic):
-    img = io.read_image(str(src_path), mode=io.ImageReadMode.RGB)
-    transform = v2.Resize(size=size, interpolation=InterpolationMode.BICUBIC if bicubic else InterpolationMode.BILINEAR, antialias=True) # keeps aspect ration
-    img = transform(img)
+    try: 
+        img = io.read_image(str(src_path), mode=io.ImageReadMode.RGB)
+        transform = v2.Resize(size=size, interpolation=InterpolationMode.BICUBIC if bicubic else InterpolationMode.BILINEAR, antialias=True) # keeps aspect ration
+        img = transform(img)
 
-    if img.ndim == 4: img = img.squeeze(0)  # [1, 3, H, W] -> [3, H, W]
-    elif img.ndim == 2: img = img.unsqueeze(0).repeat(3, 1, 1) # [H, W] -> [3, H, W]
-    if img.shape[0] != 3: img = img.repeat(3, 1, 1)[:3, :, :] # If it's something bizarre like [1, H, W] after all that
+        # img = img.squeeze() # remove dims of size 1: [1,1,3,H,W] -> [3,H,W]
+        # if img.ndim == 2: img.unsqueeze() # if grayscale [H,W], make it 3D
+        # if img.ndim != 3 or img.shape[0] != 3: # if not 3D or doesnt have 3 channels, fix it
+        #     img = img[0:1, :, :].expand(3, -1, -1)
 
-    io.write_jpeg(img.as_subclass(torch.Tensor).to(torch.uint8).cpu(), dst_path, quality=95)
+        io.write_jpeg(img.as_subclass(torch.Tensor).to(torch.uint8).cpu(), dst_path, quality=95)
+    except (RuntimeError, Exception) as e: 
+        print(f'Skipped {src_path} => {e}')
 
 
 def _check_corrupted_img(path: str):
@@ -77,6 +81,24 @@ def _check_corrupted_img(path: str):
         io.read_image(path, mode=io.ImageReadMode.RGB)
     except (RuntimeError, Exception) as e: 
         return (path, e)
+
+
+from PIL import Image, ImageFile
+ImageFile.LOAD_TRUNCATED_IMAGES = False # Ensure we don't ignore truncation
+
+def _check_corrupted_img_pil(path: str):
+    try:
+        with Image.open(path) as img: img.verify() # Verifies the header integrity
+        with Image.open(path) as img:
+            img.load() 
+            img.convert('RGB') 
+
+        t_img = io.read_image(path, mode=io.ImageReadMode.RGB)
+        if t_img.ndim not in [2, 3, 4] or t_img.numel() == 0:
+            return (path, f"Invalid tensor shape: {t_img.shape}")
+
+    except Exception as e:
+        return (path, str(e))
 
 
 async def _dwn_img_semaphore(session, url, path, semaphore):

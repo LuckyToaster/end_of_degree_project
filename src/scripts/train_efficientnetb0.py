@@ -5,13 +5,13 @@ from sklearn.model_selection import train_test_split
 from torch.utils.data import DataLoader
 
 from src.mmfood100k.dataset import MMFood100KDataset
-from src.helpers import standardize, train_loop
+from src.helpers.ml import standardize, train
 from src.models.efficientnet import get_model
 
 torch.cuda.empty_cache() if torch.cuda.is_available() else print('NO CUDA 🙉')
 DEVICE = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 SEED = 1
-EPOCHS = 20
+EPOCHS = 50
 BATCH_SIZE = 32
 LR = 1e-4
 TARGETS = ['fat_g', 'carb_g', 'protein_g']
@@ -35,7 +35,7 @@ if __name__ == '__main__':
 
     del df, train_df, test_df, train_ds, test_ds 
 
-    losses = train_loop(
+    losses = train(
         model = model, 
         epochs = EPOCHS, 
         loader = train_loader, 
