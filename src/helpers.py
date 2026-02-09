@@ -144,12 +144,13 @@ def check_corrupted_imgs(imgs_dir: Path):
 def check_corrupted_imgs_v2(imgs_dir: Path):
     paths = list(map(lambda p: str(p), imgs_dir.iterdir()))
     with ThreadPoolExecutor(max_workers=cpu_count()) as executor:
-        return list(tqdm(
+        results = list(tqdm(
             executor.map(check_corrupted_img, paths),
             total=len(paths),
             desc=f'{str(imgs_dir)} => Verifying Integrity',
             unit='img'
         ))
+    return [r for r in results if r is not None]
 
 def check_corrupted_img(path: str):
         try:
