@@ -27,8 +27,8 @@ if __name__ == '__main__':
     print(train_df[TARGETS].describe()) 
     train_df[TARGETS], test_df[TARGETS] = standardize(train_df[TARGETS], test_df[TARGETS])
 
-    train_ds = MMFood100KDataset(train_df, transform=transforms, input='imgs_224x224_path')
-    test_ds = MMFood100KDataset(test_df, transform=transforms, input='imgs_224x224_path')
+    train_ds = MMFood100KDataset(train_df, transform=transforms, input='resized_img_path')
+    test_ds = MMFood100KDataset(test_df, transform=transforms, input='resized_img_path')
 
     train_loader = DataLoader(train_ds, batch_size=BATCH_SIZE, shuffle=True, num_workers=8, pin_memory=True, persistent_workers=True)
     test_loader = DataLoader(test_ds, batch_size=BATCH_SIZE, shuffle=True, num_workers=8, pin_memory=True, persistent_workers=True)
@@ -39,7 +39,7 @@ if __name__ == '__main__':
         model = model, 
         epochs = EPOCHS, 
         loader = train_loader, 
-        criterion = torch.nn.HuberLoss(), 
+        criterion = torch.nn.L1Loss(), 
         optimizer = torch.optim.AdamW(model.parameters(), lr=1e-4, weight_decay=0.01), 
         device = DEVICE
     )

@@ -11,5 +11,5 @@ def get_model():
     in_features = model.classifier[1].in_features
     model.classifier[1] = Linear(in_features, 3)
     xavier_uniform_(model.classifier[1].weight)
-
+    print(weights.transforms())
     return model, weights.transforms()

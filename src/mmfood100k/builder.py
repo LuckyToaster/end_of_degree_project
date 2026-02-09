@@ -1,7 +1,7 @@
 import pandas as pd
 from pathlib import Path
 import json
-from src.helpers import download_images, check_corrupted_imgs, downsample_imgs
+from src.helpers import download_images, check_corrupted_imgs, downsample_images, resize_images, check_corrupted_imgs_v2
 # from os import path
 
 
@@ -48,29 +48,24 @@ class MMFood100KBuilder:
 
 
     async def download_imgs(self, limit=10):
-        self.df = pd.read_csv(self.csv_path)
         while True:
             missing = self._missing_img_ids(self.imgs_dir)
             if not missing: break
             urls = self.df.iloc[missing]['img_url'].tolist()
             paths = self.df.iloc[missing]['img_path'].tolist()
-            await download_images(urls, paths, limit, f'{self.imgs_dir}: Downloading missing images')
+            await download_images(urls, paths, limit, f'{self.imgs_dir} => Downloading any missing images')
         return self 
 
 
     async def fix_corrupted_imgs(self):
-        corrupted = check_corrupted_imgs(self.imgs_dir)
-        if not corrupted: 
+        corrupted_paths = [path for path,_ in check_corrupted_imgs_v2(self.imgs_dir)]
+        if not corrupted_paths: 
             print('No Corrupted Images ✅')
             return 
 
-        print(f'CORRUPTED IMAGES: {corrupted}')
-        df = pd.read_csv(self.csv_path)
-        corrupted_paths = [p for p,_ in corrupted]
-        urls = df[df['img_path'].isin(corrupted_paths)]['img_url']
-        await download_images(urls, corrupted_paths, 10, 'Re-Downloading corrupted images')
+        urls = self.df[self.df['img_path'].isin(corrupted_paths)]['img_url']
+        await download_images(urls, corrupted_paths, 10, f'{self.imgs_dir} => Re-Downloading corrupted images')
 
 
     def resize_images(self):
-        df = pd.read_csv(self.csv_path)
-        downsample_imgs(df['img_path'].tolist(), df['resized_img_path'].tolist(), self.img_size)
+        resize_images(self.df['img_path'].tolist(), self.df['resized_img_path'].tolist(), self.img_size)

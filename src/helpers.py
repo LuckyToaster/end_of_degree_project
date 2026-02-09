@@ -84,14 +84,38 @@ from concurrent.futures import ThreadPoolExecutor
 from itertools import repeat
 from os import cpu_count
 
-def downsample_imgs(src_paths, dst_paths, size):
+def downsample_images(src_paths, dst_paths, size):
     src_dir = str(Path(src_paths[0]).parent)
     dst_dir = str(Path(dst_paths[0]).parent)
     with ThreadPoolExecutor(max_workers=cpu_count()) as executor:
         list(tqdm(
             executor.map(downsample_img, src_paths, dst_paths, repeat(size)),
             total=len(src_paths),
-            esc=f'{src_dir} => {dst_dir}: Downsampling Images',
+            desc=f'{src_dir} => {dst_dir}: Downsampling Images',
+            unit='img'
+        ))
+
+import torch
+from torchvision import io
+from torchvision.transforms import v2, InterpolationMode
+from pathlib import Path
+
+def resize_img(src_path, dst_path, size, bicubic):
+    img = io.read_image(str(src_path), mode=io.ImageReadMode.RGB)
+    interpolation = InterpolationMode.BICUBIC if bicubic else InterpolationMode.BILINEAR
+    transform = v2.Resize(size=size, interpolation=interpolation, antialias=True) # keeps aspect ration
+    img = transform(img)
+    io.write_jpeg(img.cpu(), dst_path, quality=95)
+
+
+def resize_images(src_paths, dst_paths, size=256, bicubic=True):
+    src_dir = str(Path(src_paths[0]).parent)
+    dst_dir = str(Path(dst_paths[0]).parent)
+    with ThreadPoolExecutor(max_workers=cpu_count()) as executor:
+        list(tqdm(
+            executor.map(downsample_img, src_paths, dst_paths, repeat(size), repeat(bicubic)),
+            total=len(src_paths),
+            desc=f'{src_dir} => {dst_dir}: Downsampling Images',
             unit='img'
         ))
 
@@ -102,21 +126,39 @@ def downsample_img(old_path, new_path, size):
             img = img.convert("RGB")
             img.thumbnail((size,size), resample=Image.LANCZOS)
             img.save(new_path, "JPEG", quality=95)
-    except Exception as e:
+    except Exception or Error as e:
         print(f"Error processing {old_path}: {e}")
 
 
 def check_corrupted_imgs(imgs_dir: Path):
     corrupted = []
-    for p in tqdm(imgs_dir.iterdir(), total=file_count(imgs_dir), desc='Checking for corrupted images', unit='img'): 
+    paths = list(imgs_dir.iterdir())
+    for p in tqdm(paths, total=len(paths), desc='Checking for corrupted images', unit='img'): 
         try:
             with Image.open(p) as img:
                 img.verify() 
                 with Image.open(p) as img2: 
                     img2.load() 
-        except Exception as e: corrupted.append((str(p), str(e)))
+        except (RuntimeError, Exception) as e: 
+            corrupted.append((str(p), str(e)))
     return corrupted 
 
+
+def check_corrupted_imgs_v2(imgs_dir: Path):
+    paths = list(map(lambda p: str(p), imgs_dir.iterdir()))
+    with ThreadPoolExecutor(max_workers=cpu_count()) as executor:
+        return list(tqdm(
+            executor.map(check_corrupted_img, paths),
+            total=len(paths),
+            desc=f'{str(imgs_dir)} => Verifying Integrity',
+            unit='img'
+        ))
+
+def check_corrupted_img(path: str):
+        try:
+            io.read_image(path, mode=io.ImageReadMode.RGB)
+        except (RuntimeError, Exception) as e: 
+            return (path, e)
 
 def file_count(directory: Path):
     return sum(1 for entry in scandir(directory) if entry.is_file())
@@ -129,7 +171,7 @@ async def download_images(urls, paths, limit, tqdm_desc):
     async with ClientSession() as sesh:         
         sem = Semaphore(limit) if limit else None
         tasks = [create_task(_dwn_img_semaphore(sesh, u, p, sem)) for u, p in zip(urls, paths)]
-        await tqdm.gather(*tasks, desc=tqdm_desc, unit="img")
+        await tqdm.gather(*tasks, desc=tqdm_desc, total=len(urls), unit="img")
 
 
 def download_images_sync(urls, paths):
@@ -140,26 +182,8 @@ def download_images_sync(urls, paths):
         _dwn_img_sync(url, path)
 
 
-def downsample_imgs_for_pillow(img_dir_path):
-    '''
-        Downsammple keeping aspect ratio all images in a directory larger than PIL's pixel_limit
-    '''
-    pixel_limit=89_478_485
-    max_dim=2000
-    for img_path in img_dir_path.iterdir():
-        try:
-            with Image.open(img_path) as img:
-                w, h = img.size
-                if w * h <= pixel_limit: continue
-
-                print(f"Downsizing {img_path} ({w}x{h})")
-                img.thumbnail((max_dim, max_dim), Image.Resampling.LANCZOS)
-                img.save(img_path, quality=95, subsampling=0)
-        except Exception as e: print(f"Error processing {img_path}: {e}")
-
-
 async def _dwn_img_semaphore(session, url, path, semaphore):
-    if semaphore: 
+    if semaphore:
         async with semaphore: 
             await _dwn_img(session, url, path)
     else: await _dwn_img(session, url, path)
