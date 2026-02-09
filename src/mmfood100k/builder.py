@@ -1,8 +1,9 @@
 import pandas as pd
 from pathlib import Path
 import json
-from src.helpers import download_images, check_corrupted_imgs, resize_images_pil, resize_images_tv, check_corrupted_imgs_v2
-# from os import path
+from src.helpers.images import download_images, resize_images, check_corrupted_images
+from src.helpers.indexing import missing_ids
+from src.helpers.misc import remove_files
 
 
 class MMFood100KBuilder:
@@ -39,17 +40,9 @@ class MMFood100KBuilder:
         self.df.to_csv(self.csv_path, index=False)
 
 
-    def _file_img_ids(self, dir):
-        return [int(i.name.split('.')[0]) for i in dir.iterdir()]
-
-    def _missing_img_ids(self, dir):
-        if not any(dir.iterdir()): return sorted(range(0, 100_000))
-        return sorted(set(range(0, 100_000)) - set(self._file_img_ids(dir)))
-
-
     async def download_imgs(self, limit=10):
         while True:
-            missing = self._missing_img_ids(self.imgs_dir)
+            missing = missing_ids(self.imgs_dir, len(self.df))
             if not missing: break
             urls = self.df.iloc[missing]['img_url'].tolist()
             paths = self.df.iloc[missing]['img_path'].tolist()
@@ -57,15 +50,22 @@ class MMFood100KBuilder:
         return self 
 
 
-    async def fix_corrupted_imgs(self):
-        corrupted_paths = [path for path,_ in check_corrupted_imgs_v2(self.imgs_dir)]
+    async def fix_corrupted_imgs(self, drop=True):
+        corrupted_paths = [path for path,_ in check_corrupted_images(self.imgs_dir)]
         if not corrupted_paths: 
             print('No Corrupted Images ✅')
             return 
 
-        urls = self.df[self.df['img_path'].isin(corrupted_paths)]['img_url']
-        await download_images(urls, corrupted_paths, 10, f'{self.imgs_dir} => Re-Downloading corrupted images')
+        if drop:
+            remove_files(corrupted_paths, f'{self.imgs_dir} => Removing corrupted images', 'img') 
+            self.df = self.df[ ~self.df['img_path'].isin(corrupted_paths) ]
+            self.df.to_csv(self.csv_path, index=False)
+        else:
+            urls = self.df[self.df['img_path'].isin(corrupted_paths)]['img_url']
+            await download_images(urls, corrupted_paths, 10, f'{self.imgs_dir} => Re-Downloading corrupted images')
 
 
     def resize_images(self):
-        resize_images_tv(self.df['img_path'].tolist(), self.df['resized_img_path'].tolist(), self.img_size)
+        src_paths = self.df['img_path'].tolist()
+        dst_paths = self.df['resized_img_path'].tolist()
+        resize_images(src_paths, dst_paths, self.img_size)
