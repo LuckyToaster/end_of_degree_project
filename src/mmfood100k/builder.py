@@ -1,7 +1,7 @@
 import pandas as pd
 from pathlib import Path
 import json
-from src.helpers import download_images, check_corrupted_imgs, downsample_images, resize_images, check_corrupted_imgs_v2
+from src.helpers import download_images, check_corrupted_imgs, resize_images_pil, resize_images_tv, check_corrupted_imgs_v2
 # from os import path
 
 
@@ -68,4 +68,4 @@ class MMFood100KBuilder:
 
 
     def resize_images(self):
-        resize_images(self.df['img_path'].tolist(), self.df['resized_img_path'].tolist(), self.img_size)
+        resize_images_tv(self.df['img_path'].tolist(), self.df['resized_img_path'].tolist(), self.img_size)

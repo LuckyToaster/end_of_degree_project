@@ -10,6 +10,11 @@ from pathlib import Path
 from os import scandir, path
 from pathlib import Path
 import torch
+from concurrent.futures import ThreadPoolExecutor
+from itertools import repeat
+from os import cpu_count
+from torchvision import io
+from torchvision.transforms import v2, InterpolationMode
 
 __all__ = ['download_images', 'download_images_sync', 'downsample_imgs', 'check_corrupted_imgs', 'standardize', 'train_loop', 'file_count', 'downsample_img']
 
@@ -80,27 +85,19 @@ def standardize(train_df, test_df):
     scaler.set_output(transform="pandas")
     return scaler.fit_transform(train_df), scaler.transform(test_df)
 
-from concurrent.futures import ThreadPoolExecutor
-from itertools import repeat
-from os import cpu_count
 
-def downsample_images(src_paths, dst_paths, size):
+def resize_images_tv(src_paths, dst_paths, size=256, bicubic=True):
     src_dir = str(Path(src_paths[0]).parent)
     dst_dir = str(Path(dst_paths[0]).parent)
     with ThreadPoolExecutor(max_workers=cpu_count()) as executor:
         list(tqdm(
-            executor.map(downsample_img, src_paths, dst_paths, repeat(size)),
+            executor.map(resize_img_tv, src_paths, dst_paths, repeat(size), repeat(bicubic)),
             total=len(src_paths),
             desc=f'{src_dir} => {dst_dir}: Downsampling Images',
             unit='img'
         ))
 
-import torch
-from torchvision import io
-from torchvision.transforms import v2, InterpolationMode
-from pathlib import Path
-
-def resize_img(src_path, dst_path, size, bicubic):
+def resize_img_tv(src_path, dst_path, size, bicubic):
     img = io.read_image(str(src_path), mode=io.ImageReadMode.RGB)
     interpolation = InterpolationMode.BICUBIC if bicubic else InterpolationMode.BILINEAR
     transform = v2.Resize(size=size, interpolation=interpolation, antialias=True) # keeps aspect ration
@@ -108,19 +105,18 @@ def resize_img(src_path, dst_path, size, bicubic):
     io.write_jpeg(img.cpu(), dst_path, quality=95)
 
 
-def resize_images(src_paths, dst_paths, size=256, bicubic=True):
+def resize_images_pil(src_paths, dst_paths, size):
     src_dir = str(Path(src_paths[0]).parent)
     dst_dir = str(Path(dst_paths[0]).parent)
     with ThreadPoolExecutor(max_workers=cpu_count()) as executor:
         list(tqdm(
-            executor.map(downsample_img, src_paths, dst_paths, repeat(size), repeat(bicubic)),
+            executor.map(resize_img_pil, src_paths, dst_paths, repeat(size)),
             total=len(src_paths),
             desc=f'{src_dir} => {dst_dir}: Downsampling Images',
             unit='img'
         ))
 
-
-def downsample_img(old_path, new_path, size):
+def resize_img_pil(old_path, new_path, size):
     try:
         with Image.open(old_path) as img:
             img = img.convert("RGB")
@@ -128,6 +124,7 @@ def downsample_img(old_path, new_path, size):
             img.save(new_path, "JPEG", quality=95)
     except Exception or Error as e:
         print(f"Error processing {old_path}: {e}")
+
 
 
 def check_corrupted_imgs(imgs_dir: Path):
