@@ -55,7 +55,7 @@ if __name__ == '__main__':
         'batch_size': BATCH_SIZE,
         'learning_rate': LR,
         'targets': TARGETS,
-        'loss': 'huber',
+        'loss': 'L1',
         'optimizer': 'adamw',
         'losses_epochs': losses 
     }

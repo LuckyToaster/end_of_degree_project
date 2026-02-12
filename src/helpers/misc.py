@@ -19,7 +19,7 @@ def ids(dir: Path):
 
 
 def missing_ids(dir: Path, length: int):
-    if not any(dir.iterdir()): return sorted(range(0, 100_000))
+    if not any(dir.iterdir()): return sorted(range(0, length))
     return sorted(set(range(0, length)) - set(ids(dir)))
 
 
