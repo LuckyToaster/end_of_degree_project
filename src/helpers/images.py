@@ -10,6 +10,8 @@ from os import cpu_count
 from torchvision import io
 from torchvision.transforms import v2, InterpolationMode
 import torch
+from PIL import Image, ImageFile
+ImageFile.LOAD_TRUNCATED_IMAGES = False # Ensure we don't ignore truncation
 
 __all__ = ['resize_images', 'get_corrupted_images', 'download_images']
 
@@ -65,12 +67,6 @@ def _resize_img(src_path, dst_path, size, bicubic):
         img = io.read_image(str(src_path), mode=io.ImageReadMode.RGB)
         transform = v2.Resize(size=size, interpolation=InterpolationMode.BICUBIC if bicubic else InterpolationMode.BILINEAR, antialias=True) # keeps aspect ration
         img = transform(img)
-
-        # img = img.squeeze() # remove dims of size 1: [1,1,3,H,W] -> [3,H,W]
-        # if img.ndim == 2: img.unsqueeze() # if grayscale [H,W], make it 3D
-        # if img.ndim != 3 or img.shape[0] != 3: # if not 3D or doesnt have 3 channels, fix it
-        #     img = img[0:1, :, :].expand(3, -1, -1)
-
         io.write_jpeg(img.as_subclass(torch.Tensor).to(torch.uint8).cpu(), dst_path, quality=95)
     except (RuntimeError, Exception) as e: 
         print(f'Skipped {src_path} => {e}')
@@ -82,9 +78,6 @@ def _check_corrupted_img(path: str):
     except (RuntimeError, Exception) as e: 
         return (path, e)
 
-
-from PIL import Image, ImageFile
-ImageFile.LOAD_TRUNCATED_IMAGES = False # Ensure we don't ignore truncation
 
 def _check_corrupted_img_pil(path: str):
     try:
@@ -116,4 +109,5 @@ async def _dwn_img(session, url, dst_path):
             async with aiofiles.open(dst_path, mode='wb') as f: 
                 await f.write(data)
     except (RuntimeError, Exception) as e: 
-        print(f'{url} => {e}', file=stderr)
+        tqdm.write(f'{url} => {e}')
+        # print(f'{url} => {e}', file=stderr)

@@ -14,13 +14,8 @@ def remove_files(paths: list[str], tqdm_desc='Removing files', tqdm_unit='file')
         print(f'remove_files(): {e}')
 
 
-def ids(dir: Path):
-    return [int(i.name.split('.')[0]) for i in dir.iterdir()]
-
-
-def missing_ids(dir: Path, length: int):
-    if not any(dir.iterdir()): return sorted(range(0, length))
-    return sorted(set(range(0, length)) - set(ids(dir)))
+def missing_paths(str_paths):
+    return [p for p in str_paths if not Path(p).exists()]
 
 
 def _rm_file(path: str):

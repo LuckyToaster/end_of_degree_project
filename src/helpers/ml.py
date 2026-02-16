@@ -3,50 +3,51 @@ from sklearn.preprocessing import StandardScaler
 from torch.nn.utils import clip_grad_norm_
 import torch
 
-__all__ = ['train', 'test', 'standardize']
+__all__ = ['train_eval_loop', 'validate', 'standardize']
 
 
-def train(model, epochs, loader, criterion, optimizer, device):
-    model.train()
-    epochs_losses = []
+def train_eval_loop(model, epochs, train_loader, test_loader, criterion, optimizer, device):
+    losses = {'train': [], 'val': []}
     for epoch in range(epochs): 
-        running_loss = 0.0
-        loop = tqdm(loader, desc=f"Epoch {epoch+1}", leave=True, unit='batch')
-        
-        for inputs, targets in loop:
-            inputs = inputs.to(device, non_blocking=True)
-            targets = targets.to(device, non_blocking=True).float()
-            
-            optimizer.zero_grad()
-            outputs = model(inputs)
-            loss = criterion(outputs, targets)
-            loss.backward()
-            # Added this to prevent exploding gradients in regression
-            clip_grad_norm_(model.parameters(), max_norm=1.0) 
-            optimizer.step()
-            
-            running_loss += loss.item()
-            loop.set_postfix(loss=loss.item())
+        train_avg_loss = train_epoch(model, train_loader, criterion, optimizer, device, epoch)
+        val_avg_loss = validate(test_loader, model, criterion, device)
 
-        epochs_losses.append(running_loss / len(loader))
-        print(f"Epoch {epoch+1} Complete - Avg Loss: {running_loss/len(loader):.4f}")
-    return epochs_losses
+        losses['train'].append(train_avg_loss)
+        losses['val'].append(val_avg_loss) 
+        print(f"Epoch {epoch+1} Complete - Train Loss: {losses['train'][-1]:.4f}, Val Loss: {losses['val'][-1]:.4f}")
+    return losses
 
 
-def test(dataloader, model, loss_fn, device):
-    size = len(dataloader.dataset)
-    num_batches = len(dataloader)
+def train_epoch(model, train_loader, criterion, optimizer, device, epoch_n):
+    model.train()
+    running_loss = 0.0
+    loop = tqdm(train_loader, desc=f"Epoch {epoch_n + 1}", leave=True, unit='batch')
+    
+    for inputs, targets in loop:
+        inputs = inputs.to(device, non_blocking=True)
+        targets = targets.to(device, non_blocking=True).float()
+        optimizer.zero_grad()
+        outputs = model(inputs)
+        # loss = criterion(outputs, targets)
+        loss = criterion(outputs, targets.view_as(outputs)) # force targets to match the shape of predictions
+        loss.backward()
+        # Added this to prevent exploding gradients in regression
+        clip_grad_norm_(model.parameters(), max_norm=1.0) 
+        optimizer.step()
+        running_loss += loss.item()
+        loop.set_postfix(loss=loss.item())
+    return running_loss / len(train_loader) # avg loss for that epoch
+
+
+def validate(loader, model, loss_fn, device):
     model.eval()
-    test_loss, correct = 0, 0
+    running_loss = 0
     with torch.no_grad():
-        for X, y in dataloader:
-            X, y = X.to(device), y.to(device)
+        for X, y in loader:
+            X, y = X.to(device), y.to(device).float()
             pred = model(X)
-            test_loss += loss_fn(pred, y).item()
-            correct += (pred.argmax(1) == y).type(torch.float).sum().item()
-    test_loss /= num_batches
-    correct /= size
-    print(f"Test Error: \n Accuracy: {(100*correct):>0.1f}%, Avg loss: {test_loss:>8f} \n")
+            running_loss += loss_fn(pred, y).item()
+    return running_loss / len(loader)
 
 
 def standardize(train_df, test_df):

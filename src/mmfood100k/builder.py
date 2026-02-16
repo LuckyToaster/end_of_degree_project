@@ -1,5 +1,5 @@
 from src.helpers.images import download_images, resize_images, get_corrupted_images
-from src.helpers.misc import remove_files, missing_ids
+from src.helpers.misc import remove_files, missing_paths
 import pandas as pd
 from pathlib import Path
 import json
@@ -38,30 +38,44 @@ class MMFood100KBuilder:
         print(f'Saving wrangled CSV')
         self.df.to_csv(self.csv_path, index=False)
 
+    # async def download_imgs(self, limit=10):
+    #     while True:
+    #         missing = missing_ids(self.imgs_dir, len(self.df))
+    #         if not missing: break
+    #         urls = self.df.iloc[missing]['img_url'].tolist()
+    #         paths = self.df.iloc[missing]['img_path'].tolist()
+    #         await download_images(urls, paths, limit, f'{self.imgs_dir} => Downloading any missing images')
+    #     return self 
+
+
     async def download_imgs(self, limit=10):
         while True:
-            missing = missing_ids(self.imgs_dir, len(self.df))
+            missing = missing_paths(self.df['img_path'].tolist())
             if not missing: break
-            urls = self.df.iloc[missing]['img_url'].tolist()
-            paths = self.df.iloc[missing]['img_path'].tolist()
+            mask = self.df['img_path'].isin(missing)
+            urls = self.df.loc[mask, 'img_url'].tolist()
+            paths = self.df.loc[mask, 'img_path'].tolist()
             await download_images(urls, paths, limit, f'{self.imgs_dir} => Downloading any missing images')
-        return self 
 
-    async def fix_corrupted_imgs(self, drop=True):
+
+    async def drop_corrupted_imgs(self):
         corrupted_paths = [path for path,_ in get_corrupted_images(self.imgs_dir)]
         if not corrupted_paths: 
             print('No Corrupted Images ✅')
             return 
+        remove_files(corrupted_paths, f'{self.imgs_dir} => Removing corrupted images', 'img') 
+        self.df = self.df[ ~self.df['img_path'].isin(corrupted_paths) ]
+        self.df.to_csv(self.csv_path, index=False)
 
-        if drop:
-            remove_files(corrupted_paths, f'{self.imgs_dir} => Removing corrupted images', 'img') 
-            self.df = self.df[ ~self.df['img_path'].isin(corrupted_paths) ]
-            self.df.to_csv(self.csv_path, index=False)
-        else:
-            urls = self.df[self.df['img_path'].isin(corrupted_paths)]['img_url']
-            await download_images(urls, corrupted_paths, 10, f'{self.imgs_dir} => Re-Downloading corrupted images')
 
     def resize_images(self):
-        src_paths = self.df['img_path'].tolist()
-        dst_paths = self.df['resized_img_path'].tolist()
+        missing = missing_paths(self.df['resized_img_path'].tolist())
+        if not missing: return
+        mask = self.df['resized_img_path'].isin(missing)
+        src_paths = self.df.loc[mask, 'img_path'].tolist()
+        dst_paths = self.df.loc[mask, 'resized_img_path'].tolist()
         resize_images(src_paths, dst_paths, self.img_size)
+
+        # src_paths = self.df['img_path'].tolist()
+        # dst_paths = self.df['resized_img_path'].tolist()
+        # resize_images(src_paths, dst_paths, self.img_size)

@@ -6,10 +6,10 @@ from torch.nn import Linear
 def get_model():
     weights = EfficientNet_B0_Weights.DEFAULT
     model = efficientnet_b0(weights=weights)
-
+    preprocess = weights.transforms()
     # adapt the head for regression
     in_features = model.classifier[1].in_features
     model.classifier[1] = Linear(in_features, 3)
     xavier_uniform_(model.classifier[1].weight)
-    print(weights.transforms())
-    return model, weights.transforms()
+    print(f'MobileNet V3 Large: {preprocess}')
+    return model, preprocess

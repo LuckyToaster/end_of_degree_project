@@ -6,7 +6,7 @@ from torch.utils.data import DataLoader
 
 from src.mmfood100k.dataset import MMFood100KDataset
 from src.helpers.ml import standardize, train_eval_loop
-from src.models.efficientnet import get_model
+from src.models.mobilenetv3 import get_model
 
 torch.cuda.empty_cache() if torch.cuda.is_available() else print('NO CUDA 🙉')
 DEVICE = torch.device("cuda" if torch.cuda.is_available() else "cpu")
