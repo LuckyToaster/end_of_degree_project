@@ -6,13 +6,13 @@ from torch.utils.data import DataLoader
 
 from src.mmfood100k.dataset import MMFood100KDataset
 from src.helpers.ml import standardize, train_eval_loop
-from src.models.mobilenetv3 import get_model
+from src.models.shufflenetv2 import get_model
 
 torch.cuda.empty_cache() if torch.cuda.is_available() else print('NO CUDA 🙉')
 DEVICE = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 SEED = 1
-EPOCHS = 100
-BATCH_SIZE = 64
+EPOCHS = 50
+BATCH_SIZE = 32
 LR = 1e-4
 TARGETS = ['fat_g', 'carb_g', 'protein_g']
 
@@ -45,7 +45,7 @@ if __name__ == '__main__':
     filename = str(dt.now()).split('.')[0]
     torch.save(model.state_dict(), f'data/{filename}.pt')
     config = {
-        'model': 'mobilenet_v3_large',
+        'model': 'shufflenet_v2_2',
         'weights_file': filename,
         'seed': SEED,
         'epochs': EPOCHS,
