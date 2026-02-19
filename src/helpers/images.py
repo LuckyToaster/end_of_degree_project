@@ -12,6 +12,9 @@ import torch
 from torchvision import io
 from PIL import Image, ImageFile
 
+import warnings
+
+warnings.filterwarnings('error') # treat warnings like errors
 # warnings.filterwarnings("ignore", category=UserWarning)
 # ImageFile.LOAD_TRUNCATED_IMAGES = True # Ensure we don't ignore truncation
 
@@ -76,9 +79,10 @@ def _resize_img(src_path, dst_path, size, bicubic):
 
 def _check_corrupted_img(path: str):
     try:
-        t_img = io.read_image(path, mode=io.ImageReadMode.RGB)
-        if t_img.ndim not in [2, 3, 4] or t_img.numel() == 0:
-            return (path, f"Invalid tensor shape: {t_img.shape}")
+        with pipes():
+            t_img = io.read_image(path, mode=io.ImageReadMode.RGB)
+            if t_img.ndim not in [2, 3, 4] or t_img.numel() == 0:
+                return (path, f"Invalid tensor shape: {t_img.shape}")
     except (RuntimeError, Exception) as e: 
         return (path, e)
 
