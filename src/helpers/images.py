@@ -7,11 +7,13 @@ from tqdm.asyncio import tqdm
 from pathlib import Path
 from itertools import repeat
 from os import cpu_count
-from torchvision import io
 from torchvision.transforms import v2, InterpolationMode
 import torch
+from torchvision import io
 from PIL import Image, ImageFile
-ImageFile.LOAD_TRUNCATED_IMAGES = False # Ensure we don't ignore truncation
+
+# warnings.filterwarnings("ignore", category=UserWarning)
+# ImageFile.LOAD_TRUNCATED_IMAGES = True # Ensure we don't ignore truncation
 
 __all__ = ['resize_images', 'get_corrupted_images', 'download_images']
 
@@ -39,7 +41,7 @@ def get_corrupted_images(imgs_dir: Path):
     paths = list(map(lambda p: str(p), imgs_dir.iterdir()))
     with ThreadPoolExecutor(max_workers=cpu_count()) as executor:
         results = list(tqdm(
-            executor.map(_check_corrupted_img_pil, paths),
+            executor.map(_check_corrupted_img, paths),
             total=len(paths),
             desc=f'{str(imgs_dir)} => Verifying Integrity',
             unit='img',
@@ -74,7 +76,9 @@ def _resize_img(src_path, dst_path, size, bicubic):
 
 def _check_corrupted_img(path: str):
     try:
-        io.read_image(path, mode=io.ImageReadMode.RGB)
+        t_img = io.read_image(path, mode=io.ImageReadMode.RGB)
+        if t_img.ndim not in [2, 3, 4] or t_img.numel() == 0:
+            return (path, f"Invalid tensor shape: {t_img.shape}")
     except (RuntimeError, Exception) as e: 
         return (path, e)
 
@@ -85,11 +89,6 @@ def _check_corrupted_img_pil(path: str):
         with Image.open(path) as img:
             img.load() 
             img.convert('RGB') 
-
-        t_img = io.read_image(path, mode=io.ImageReadMode.RGB)
-        if t_img.ndim not in [2, 3, 4] or t_img.numel() == 0:
-            return (path, f"Invalid tensor shape: {t_img.shape}")
-
     except Exception as e:
         return (path, str(e))
 

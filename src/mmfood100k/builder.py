@@ -19,9 +19,9 @@ class MMFood100KBuilder:
         self.imgs_dir.mkdir(parents=True, exist_ok=True)
         self.resized_imgs_dir.mkdir(parents=True, exist_ok=True)
 
-        if self.csv_path.is_file(): 
-            self.df = pd.read_csv(self.csv_path)
-            return 
+        # if self.csv_path.is_file(): 
+        #     self.df = pd.read_csv(self.csv_path)
+        #     return 
 
         print(f'Downloading {self.csv_path}')
         self.df = pd.read_csv(self.URL)
@@ -34,18 +34,8 @@ class MMFood100KBuilder:
         self.df[target_cols] = self.df['nutritional_profile'].apply(lambda x: pd.Series(json.loads(x)))[target_names]
         self.df[target_cols] = self.df[target_cols].astype(float)
         self.df = self.df.drop(columns=['camera_or_phone_prob', 'nutritional_profile'])
-
         print(f'Saving wrangled CSV')
         self.df.to_csv(self.csv_path, index=False)
-
-    # async def download_imgs(self, limit=10):
-    #     while True:
-    #         missing = missing_ids(self.imgs_dir, len(self.df))
-    #         if not missing: break
-    #         urls = self.df.iloc[missing]['img_url'].tolist()
-    #         paths = self.df.iloc[missing]['img_path'].tolist()
-    #         await download_images(urls, paths, limit, f'{self.imgs_dir} => Downloading any missing images')
-    #     return self 
 
 
     async def download_imgs(self, limit=10):
@@ -75,7 +65,3 @@ class MMFood100KBuilder:
         src_paths = self.df.loc[mask, 'img_path'].tolist()
         dst_paths = self.df.loc[mask, 'resized_img_path'].tolist()
         resize_images(src_paths, dst_paths, self.img_size)
-
-        # src_paths = self.df['img_path'].tolist()
-        # dst_paths = self.df['resized_img_path'].tolist()
-        # resize_images(src_paths, dst_paths, self.img_size)

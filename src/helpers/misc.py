@@ -4,7 +4,7 @@ from os import cpu_count
 from sys import stderr
 from tqdm import tqdm
 
-__all__ = ['ids', 'missing_ids', 'remove_files']
+__all__ = ['remove_files', 'missing_paths']
 
 def remove_files(paths: list[str], tqdm_desc='Removing files', tqdm_unit='file') -> None:
     try:
