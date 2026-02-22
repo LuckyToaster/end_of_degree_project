@@ -8,7 +8,6 @@ from torchvision.models import \
 from torch.nn.init import xavier_uniform_
 from torch.nn import Linear
 
-
 def get_EfficentNet_B0():
     weights = EfficientNet_B0_Weights.DEFAULT
     model = efficientnet_b0(weights=weights)
@@ -21,7 +20,7 @@ def get_EfficentNet_B0():
     return model, preprocess
 
 
-def get_EfficentNet_B3():
+def get_EfficientNet_B3():
     weights = EfficientNet_B3_Weights.DEFAULT
     model = efficientnet_b3(weights=weights)
     preprocess = weights.transforms()
