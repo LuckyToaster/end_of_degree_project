@@ -8,9 +8,6 @@ async def main():
     await builder.drop_corrupted_imgs()
     builder.resize_images()
 
-asyncio.run(main())
 
-
-     
-
-
+if __name__ == '__main__':
+    asyncio.run(main())

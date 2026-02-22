@@ -19,10 +19,6 @@ class MMFood100KBuilder:
         self.imgs_dir.mkdir(parents=True, exist_ok=True)
         self.resized_imgs_dir.mkdir(parents=True, exist_ok=True)
 
-        # if self.csv_path.is_file(): 
-        #     self.df = pd.read_csv(self.csv_path)
-        #     return 
-
         print(f'Downloading {self.csv_path}')
         self.df = pd.read_csv(self.URL)
         self.df = self.df.rename(columns={'image_url': 'img_url'})
@@ -50,9 +46,10 @@ class MMFood100KBuilder:
 
     async def drop_corrupted_imgs(self):
         corrupted_paths = [path for path,_ in get_corrupted_images(self.imgs_dir)]
-        if not corrupted_paths: 
+        if not corrupted_paths:
             print('No Corrupted Images ✅')
             return 
+
         remove_files(corrupted_paths, f'{self.imgs_dir} => Removing corrupted images', 'img') 
         self.df = self.df[ ~self.df['img_path'].isin(corrupted_paths) ]
         self.df.to_csv(self.csv_path, index=False)
