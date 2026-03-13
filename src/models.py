@@ -2,6 +2,8 @@ from torchvision.models import \
     efficientnet_b0, EfficientNet_B0_Weights, \
     efficientnet_b3, EfficientNet_B3_Weights, \
     efficientnet_v2_s, EfficientNet_V2_S_Weights, \
+    efficientnet_v2_m, EfficientNet_V2_M_Weights, \
+    efficientnet_v2_l, EfficientNet_V2_L_Weights, \
     mobilenet_v3_large, MobileNet_V3_Large_Weights, \
     shufflenet_v2_x2_0, ShuffleNet_V2_X2_0_Weights
 
@@ -35,6 +37,28 @@ def get_EfficientNet_B3():
 def get_EfficientNet_V2_S():
     weights = EfficientNet_V2_S_Weights.DEFAULT
     model = efficientnet_v2_s(weights=weights)
+    preprocess = weights.transforms()
+    # adapt the head for regression
+    in_features = model.classifier[1].in_features
+    model.classifier[1] = Linear(in_features, 3)
+    xavier_uniform_(model.classifier[1].weight)
+    print(f'EfficientNet V2 Small: {preprocess}')
+    return model, preprocess
+
+def get_EfficientNet_V2_M():
+    weights = EfficientNet_V2_M_Weights.DEFAULT
+    model = efficientnet_v2_m(weights=weights)
+    preprocess = weights.transforms()
+    # adapt the head for regression
+    in_features = model.classifier[1].in_features
+    model.classifier[1] = Linear(in_features, 3)
+    xavier_uniform_(model.classifier[1].weight)
+    print(f'EfficientNet V2 Small: {preprocess}')
+    return model, preprocess
+
+def get_EfficientNet_V2_M():
+    weights = EfficientNet_V2_L_Weights.DEFAULT
+    model = efficientnet_v2_l(weights=weights)
     preprocess = weights.transforms()
     # adapt the head for regression
     in_features = model.classifier[1].in_features
