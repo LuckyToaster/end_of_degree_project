@@ -31,6 +31,3 @@ class MMFood100KDataset(Dataset):
         except Exception as e:
             print(f'DataLoader: {e}')
             return self._get_rand_item()
-
-
-            

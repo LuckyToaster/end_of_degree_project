@@ -6,9 +6,10 @@ from torch.utils.data import DataLoader
 
 from src.mmfood100k.dataset import MMFood100KDataset
 from src.helpers.ml import standardize, train_eval_loop
+
 # from src.models import get_EfficientNet_V2_S
-# from src.models import get_EfficientNet_B3
-from src.models import get_EfficientNet_B0
+from src.models import get_EfficientNet_B3
+# from src.models import get_EfficientNet_B0
 
 torch.cuda.empty_cache() if torch.cuda.is_available() else print('NO CUDA 🙉')
 DEVICE = torch.device("cuda" if torch.cuda.is_available() else "cpu")
@@ -20,7 +21,7 @@ TARGETS = ['fat_g', 'carb_g', 'protein_g']
 
 
 if __name__ == '__main__':
-    model, transforms = get_EfficientNet_B0()
+    model, transforms = get_EfficientNet_B3()
     model = model.to(DEVICE)
 
     df = pd.read_csv('data/mm-food-100k/mm-food-100k.csv')

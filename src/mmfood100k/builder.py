@@ -1,5 +1,5 @@
 from src.helpers.images import download_images, resize_images, get_corrupted_images
-from src.helpers.misc import remove_files, missing_paths
+from src.helpers.files import remove_files, missing_paths
 import pandas as pd
 from pathlib import Path
 import json
