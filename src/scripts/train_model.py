@@ -48,7 +48,7 @@ if __name__ == '__main__':
     filename = str(dt.now()).split('.')[0]
     torch.save(model.state_dict(), f'data/{filename}.pt')
     config = {
-        'model': 'efficient_net_b3',
+        'model': 'efficient_net_V2_M',
         'weights_file': filename,
         'seed': SEED,
         'epochs': EPOCHS,

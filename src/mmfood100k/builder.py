@@ -7,6 +7,7 @@ import json
 
 class MMFood100KBuilder:
     URL = 'hf://datasets/Codatta/MM-Food-100K/MM-Food-100K.csv' # https://huggingface.co/datasets/Codatta/MM-Food-100K
+    COLS_TO_KEEP = ['img_url', 'dish_name', 'img_path', 'resized_img_path', 'fat_g', 'carb_g', 'protein_g', 'kcal']
 
     def __init__(self, data_path, img_size):
         self.dir = data_path / 'mm-food-100k'
@@ -29,7 +30,11 @@ class MMFood100KBuilder:
         target_names = ['fat_g', 'carbohydrate_g', 'protein_g', 'calories_kcal']
         self.df[target_cols] = self.df['nutritional_profile'].apply(lambda x: pd.Series(json.loads(x)))[target_names]
         self.df[target_cols] = self.df[target_cols].astype(float)
-        self.df = self.df.drop(columns=['camera_or_phone_prob', 'nutritional_profile'])
+        #self.df = self.df.drop(columns=['camera_or_phone_prob', 'nutritional_profile'])
+
+        cols_to_drop = list(set(self.df.columns) - set(self.COLS_TO_KEEP))
+        self.df = self.df.drop(columns=cols_to_drop)
+
         print(f'Saving wrangled CSV')
         self.df.to_csv(self.csv_path, index=False)
 

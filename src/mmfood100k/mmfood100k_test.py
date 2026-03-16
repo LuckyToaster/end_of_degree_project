@@ -8,11 +8,14 @@ import random
 data_path = Path('data')
 df = pd.read_csv(data_path / 'mm-food-100k/mm-food-100k.csv')
 
+_, transforms = get_EfficientNet_B0()
+dataset = MMFood100KDataset(df, transform=transforms)
+
+
+def test_dataset_len():
+    assert len(dataset.paths) == len(dataset.targets)
 
 def test_dataset_no_errors():
-    _, transforms = get_EfficientNet_B0()
-    dataset = MMFood100KDataset(df, transform=transforms)
-
     head_indices = list(range(100))
     tail_indices = list(range(len(dataset) - 100, len(dataset)))
     random_indices = random.sample(range(100, len(dataset)-100), 100) 
@@ -23,3 +26,4 @@ def test_dataset_no_errors():
         assert not torch.isnan(img).any()
         assert target.shape == (3,) 
     
+
