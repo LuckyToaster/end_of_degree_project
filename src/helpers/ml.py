@@ -55,7 +55,3 @@ def standardize(train_df, test_df):
     scaler = StandardScaler()
     scaler.set_output(transform="pandas")
     return scaler.fit_transform(train_df), scaler.transform(test_df)
-
-
-def plot_train_val_accuracy(losses):
-    
