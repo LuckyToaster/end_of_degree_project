@@ -22,6 +22,7 @@ class MMFood100KBuilder:
 
         print(f'Downloading {self.csv_path}')
         self.df = pd.read_csv(self.URL)
+
         self.df = self.df.rename(columns={'image_url': 'img_url'})
         img_suffixes = self.df['img_url'].apply(lambda x: Path(x).suffix).tolist()
         self.df['img_path'] = str(self.imgs_dir) + '/' + self.df.index.astype(str) + img_suffixes
@@ -30,7 +31,6 @@ class MMFood100KBuilder:
         target_names = ['fat_g', 'carbohydrate_g', 'protein_g', 'calories_kcal']
         self.df[target_cols] = self.df['nutritional_profile'].apply(lambda x: pd.Series(json.loads(x)))[target_names]
         self.df[target_cols] = self.df[target_cols].astype(float)
-        #self.df = self.df.drop(columns=['camera_or_phone_prob', 'nutritional_profile'])
 
         cols_to_drop = list(set(self.df.columns) - set(self.COLS_TO_KEEP))
         self.df = self.df.drop(columns=cols_to_drop)

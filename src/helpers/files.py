@@ -14,8 +14,8 @@ def remove_files(paths: list[str], tqdm_desc='Removing files', tqdm_unit='file')
         print(f'remove_files(): {e}')
 
 
-def missing_paths(str_paths):
-    return [p for p in str_paths if not Path(p).exists()]
+def missing_paths(paths: list[str]):
+    return [p for p in paths if not Path(p).exists()]
 
 
 def _rm_file(path: str):

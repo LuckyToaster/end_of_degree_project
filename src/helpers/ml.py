@@ -2,6 +2,7 @@ from tqdm.asyncio import tqdm
 from sklearn.preprocessing import StandardScaler
 from torch.nn.utils import clip_grad_norm_
 import torch
+import matplotlib.pyplot as plt
 
 __all__ = ['train_eval_loop', 'validate', 'standardize']
 
@@ -54,3 +55,7 @@ def standardize(train_df, test_df):
     scaler = StandardScaler()
     scaler.set_output(transform="pandas")
     return scaler.fit_transform(train_df), scaler.transform(test_df)
+
+
+def plot_train_val_accuracy(losses):
+    
