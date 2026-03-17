@@ -3,9 +3,6 @@ from sklearn.preprocessing import StandardScaler
 from torch.nn.utils import clip_grad_norm_
 import torch
 
-import optuna
-from optuna.samplers import TPESampler
-from optuna.pruners import HyperbandPruner
 
 __all__ = ['train_eval_loop', 'validate', 'standardize']
 
@@ -58,12 +55,3 @@ def standardize(train_df, test_df):
     scaler = StandardScaler()
     scaler.set_output(transform="pandas")
     return scaler.fit_transform(train_df), scaler.transform(test_df)
-
-
-study = optuna.create_study(
-    direction="maximize",
-    sampler=TPESampler(seed=42),
-    pruner=HyperbandPruner(min_resource=1, max_resource=100, reduction_factor=3)
-)
-
-study.optimize(objective, n_trials=100)   

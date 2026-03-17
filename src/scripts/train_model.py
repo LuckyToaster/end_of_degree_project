@@ -7,7 +7,8 @@ from torch.utils.data import DataLoader
 from src.mmfood100k.dataset import MMFood100KDataset
 from src.helpers.ml import standardize, train_eval_loop
 
-from src.models import get_EfficientNet_V2_M
+# from src.models import get_EfficientNet_V2_M
+from src.models import get_MobileNet_V3_L
 # from src.models import get_EfficientNet_B3
 # from src.models import get_EfficientNet_B0
 
@@ -21,7 +22,7 @@ TARGETS = ['fat_g', 'carb_g', 'protein_g']
 
 
 if __name__ == '__main__':
-    model, transforms = get_EfficientNet_V2_M()
+    model, transforms = get_MobileNet_V3_L()
     model = model.to(DEVICE)
 
     df = pd.read_csv('data/mm-food-100k/mm-food-100k.csv')
