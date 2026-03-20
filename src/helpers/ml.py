@@ -10,10 +10,10 @@ __all__ = ['train_eval_loop', 'validate', 'standardize']
 def train_eval_loop(model, epochs, train_loader, test_loader, criterion, optimizer, device):
     losses = {'train': [], 'val': []}
     for epoch in range(epochs): 
-        train_avg_loss = train_epoch(model, train_loader, criterion, optimizer, device, epoch)
+        train_losses, train_loss = train_epoch(model, train_loader, criterion, optimizer, device, epoch)
         val_avg_loss = validate(test_loader, model, criterion, device)
 
-        losses['train'].append(train_avg_loss)
+        losses['train'].append({'individual_avg_losses': train_losses, 'avg_loss': train_loss})
         losses['val'].append(val_avg_loss) 
         print(f"Epoch {epoch+1} Complete - Train Loss: {losses['train'][-1]:.4f}, Val Loss: {losses['val'][-1]:.4f}")
     return losses
@@ -22,26 +22,35 @@ def train_eval_loop(model, epochs, train_loader, test_loader, criterion, optimiz
 def train_epoch(model, train_loader, criterion, optimizer, device, epoch_n):
     model.train()
     running_loss = 0.0
+    running_losses = [0.0, 0.0, 0.0]
+
     loop = tqdm(train_loader, desc=f"Epoch {epoch_n + 1}", leave=True, unit='batch')
-    
     for inputs, targets in loop:
         inputs = inputs.to(device, non_blocking=True)
         targets = targets.to(device, non_blocking=True).float()
 
         optimizer.zero_grad()
         outputs = model(inputs)
-        print(outputs)
-        print(type(outputs))
-        # loss = criterion(outputs, targets)
         loss = criterion(outputs, targets.view_as(outputs)) # force targets to match the shape of predictions
+
+        # Calculate individual losses (no gradients needed for tracking)
+        with torch.no_grad():
+            for i in range(3):
+                # Calculate loss for just the i-th column/output
+                ind_loss = criterion(outputs[:, i], targets[:, i])
+                running_losses[i] += ind_loss.item()
+
         loss.backward()
         # Added this to prevent exploding gradients in regression
-        clip_grad_norm_(model.parameters(), max_norm=1.0) 
+        # clip_grad_norm_(model.parameters(), max_norm=1.0) 
         optimizer.step()
         running_loss += loss.item()
         loop.set_postfix(loss=loss.item())
-    return running_loss / len(train_loader) # avg loss for that epoch
-#return [individual losses], avg_loss
+
+    avg_loss = running_loss / len(train_loader)
+    avg_losses = [l / len(train_loader) for l in running_losses]
+
+    return avg_losses, avg_loss
 
 
 def validate(loader, model, loss_fn, device):
