@@ -10,11 +10,11 @@ __all__ = ['train_eval_loop', 'validate', 'standardize']
 def train_eval_loop(model, epochs, train_loader, test_loader, criterion, optimizer, device):
     losses = {'train': [], 'val': []}
     for epoch in range(epochs): 
-        train_losses, train_loss = train_epoch(model, train_loader, criterion, optimizer, device, epoch)
-        val_losses, val_loss = validate(test_loader, model, criterion, device)
+        train_losses = train_epoch(model, train_loader, criterion, optimizer, device, epoch)
+        val_losses = validate(test_loader, model, criterion, device)
 
-        losses['train'].append(train_losses.append(train_loss))
-        losses['val'].append(val_losses.append(val_loss)) 
+        losses['train'].append(train_losses)
+        losses['val'].append(val_losses) 
 
         res_train = [round(l, 4) for l  in losses['train'][-1]]
         res_val = [round(l, 4) for l in losses['val'][-1]]
@@ -53,7 +53,8 @@ def train_epoch(model, train_loader, criterion, optimizer, device, epoch_n):
 
     avg_loss = running_loss / len(train_loader)
     avg_losses = [l / len(train_loader) for l in running_losses]
-    return avg_losses, avg_loss
+    avg_losses.append(avg_loss)
+    return avg_losses 
 
 
 def validate(loader, model, criterion, device):
@@ -76,7 +77,8 @@ def validate(loader, model, criterion, device):
                 
     avg_loss = running_loss / len(loader)
     avg_losses = [l / len(loader) for l in running_losses]
-    return avg_losses, avg_loss
+    avg_losses.append(avg_loss)
+    return avg_losses 
 
 
 def standardize(train_df, test_df):
