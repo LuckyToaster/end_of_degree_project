@@ -27,8 +27,10 @@ def train_epoch(model, train_loader, criterion, optimizer, device, epoch_n):
     for inputs, targets in loop:
         inputs = inputs.to(device, non_blocking=True)
         targets = targets.to(device, non_blocking=True).float()
+
         optimizer.zero_grad()
         outputs = model(inputs)
+        print(outputs)
         # loss = criterion(outputs, targets)
         loss = criterion(outputs, targets.view_as(outputs)) # force targets to match the shape of predictions
         loss.backward()
@@ -38,6 +40,7 @@ def train_epoch(model, train_loader, criterion, optimizer, device, epoch_n):
         running_loss += loss.item()
         loop.set_postfix(loss=loss.item())
     return running_loss / len(train_loader) # avg loss for that epoch
+#return [individual losses], avg_loss
 
 
 def validate(loader, model, loss_fn, device):
