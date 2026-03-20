@@ -11,11 +11,15 @@ def train_eval_loop(model, epochs, train_loader, test_loader, criterion, optimiz
     losses = {'train': [], 'val': []}
     for epoch in range(epochs): 
         train_losses, train_loss = train_epoch(model, train_loader, criterion, optimizer, device, epoch)
-        val_avg_loss = validate(test_loader, model, criterion, device)
+        val_losses, val_loss = validate(test_loader, model, criterion, device)
 
-        losses['train'].append({'individual_avg_losses': train_losses, 'avg_loss': train_loss})
-        losses['val'].append(val_avg_loss) 
-        print(f"Epoch {epoch+1} Complete - Train Loss: {losses['train'][-1]:.4f}, Val Loss: {losses['val'][-1]:.4f}")
+        losses['train'].append(train_losses.append(train_loss))
+        losses['val'].append(val_losses.append(val_loss)) 
+
+        res_train = [round(l, 4) for l  in losses['train'][-1]]
+        res_val = [round(l[''], 4) for l in losses['val'][-1]]
+        print(f'Epoch {epoch+1} Complete - Train Losses {res_train}, Val Losses: {res_val}')
+        # print(f"Epoch {epoch+1} Complete - Train Loss: {losses['train'][-1]:.4f}, Val Loss: {losses['val'][-1]:.4f}")
     return losses
 
 
@@ -49,19 +53,30 @@ def train_epoch(model, train_loader, criterion, optimizer, device, epoch_n):
 
     avg_loss = running_loss / len(train_loader)
     avg_losses = [l / len(train_loader) for l in running_losses]
-
     return avg_losses, avg_loss
 
 
-def validate(loader, model, loss_fn, device):
+def validate(loader, model, criterion, device):
     model.eval()
-    running_loss = 0
+    running_loss = 0.0
+    running_losses = [0.0, 0.0, 0.0]
+
     with torch.no_grad():
         for X, y in loader:
             X, y = X.to(device), y.to(device).float()
             pred = model(X)
-            running_loss += loss_fn(pred, y).item()
-    return running_loss / len(loader)
+            y = y.view_as(pred)
+            
+            loss = criterion(pred, y)
+            running_loss += loss.item()
+            
+            for i in range(3):
+                ind_loss = criterion(pred[:, i], y[:, i])
+                running_losses[i] += ind_loss.item()
+                
+    avg_loss = running_loss / len(loader)
+    avg_losses = [l / len(loader) for l in running_losses]
+    return avg_losses, avg_loss
 
 
 def standardize(train_df, test_df):
