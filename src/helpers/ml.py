@@ -31,6 +31,7 @@ def train_epoch(model, train_loader, criterion, optimizer, device, epoch_n):
         optimizer.zero_grad()
         outputs = model(inputs)
         print(outputs)
+        print(type(outputs))
         # loss = criterion(outputs, targets)
         loss = criterion(outputs, targets.view_as(outputs)) # force targets to match the shape of predictions
         loss.backward()
