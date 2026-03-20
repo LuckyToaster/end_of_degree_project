@@ -17,7 +17,7 @@ def train_eval_loop(model, epochs, train_loader, test_loader, criterion, optimiz
         losses['val'].append(val_losses.append(val_loss)) 
 
         res_train = [round(l, 4) for l  in losses['train'][-1]]
-        res_val = [round(l[''], 4) for l in losses['val'][-1]]
+        res_val = [round(l, 4) for l in losses['val'][-1]]
         print(f'Epoch {epoch+1} Complete - Train Losses {res_train}, Val Losses: {res_val}')
         # print(f"Epoch {epoch+1} Complete - Train Loss: {losses['train'][-1]:.4f}, Val Loss: {losses['val'][-1]:.4f}")
     return losses
