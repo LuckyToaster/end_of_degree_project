@@ -37,7 +37,7 @@ def objective(trial):
     
     model = model.to(device)
     bs = MODEL_CONFIGS[model_name]['bs']
-    lr = linear_scaling(LR, 32, bs)
+    lr = lr_linear_scaling(LR, 32, bs)
 
     train_ds = MMFood100KDataset(train_df, transform=transforms, input=INPUT, targets=TARGETS)
     test_ds = MMFood100KDataset(test_df, transform=transforms, input=INPUT, targets=TARGETS)
