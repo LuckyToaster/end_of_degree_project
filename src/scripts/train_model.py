@@ -7,14 +7,14 @@ from torch.utils.data import DataLoader
 from src.mmfood100k.dataset import MMFood100KDataset
 from src.helpers.ml import standardize, train_eval_loop
 
-# EN_B3 = 128?, EN_V2_S = 32, MN_V3_L = 128?, S_V2_S = ?
+# EN_B3 = 32, EN_V2_S = 32, MN_V3_L = 128?, S_V2_S = ?
 from src.models import get_EfficientNet_B3, get_EfficientNet_V2_S, get_MobileNet_V3_L, get_Swin_V2_S
 
 torch.cuda.empty_cache() if torch.cuda.is_available() else print('NO CUDA 🙉')
 DEVICE = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 SEED = 1
 EPOCHS = 2
-BATCH_SIZE = 32
+BATCH_SIZE = 256
 LR = 1e-4
 TARGETS = ['fat_g', 'carb_g', 'protein_g']
 
