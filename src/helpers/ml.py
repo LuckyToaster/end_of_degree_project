@@ -3,7 +3,10 @@ from sklearn.preprocessing import StandardScaler
 from torch.nn.utils import clip_grad_norm_
 import torch
 
-__all__ = ['train_eval_loop', 'validate', 'standardize']
+__all__ = ['train_eval_loop', 'validate', 'standardize', 'lr_linear_scaling']
+
+
+lr_linear_scaling = lambda lr, old_bs, new_bs: lr * (new_bs / old_bs)
 
 
 def train_eval_loop(model, epochs, train_loader, test_loader, criterion, optimizer, device):
