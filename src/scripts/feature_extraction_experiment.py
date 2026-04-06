@@ -1,6 +1,6 @@
 import torch
 import optuna
-from src.models import get_EfficientNet_B3, get_EfficientNet_V2_S, get_EfficientNet_V2_M, get_EfficientNet_V2_L, \
+from src.models import get_EfficientNet_B3, get_EfficientNet_V2_S, get_EfficientNet_V2_M, get_EfficientNet_V2_M, \
     get_MobileNet_V3_L, get_Swin_V2_S, get_Swin_V2_B 
 
 # biggest models that can be ran: EN_B3, EF_V2_M?, MN_V2_L, S_V2_S
