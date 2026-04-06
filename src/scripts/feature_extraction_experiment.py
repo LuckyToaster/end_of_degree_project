@@ -4,10 +4,10 @@ from src.models import get_EfficientNet_B3, get_EfficientNet_V2_S, get_Efficient
     get_MobileNet_V3_L, get_Swin_V2_S, get_Swin_V2_B 
 
 torch.cuda.empty_cache() if torch.cuda.is_available() else print('NO CUDA 🙉')
-DEVICE = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
 models = [get_EfficientNet_B3, get_EfficientNet_V2_S, get_MobileNet_V3_L, get_Swin_V2_S]
-batch_sizes = []
+models_max_bs = [32, 32, 128, 256,]
 
 def objective(trial):
     # DATA AUGMENT PARAMETERS
@@ -18,8 +18,8 @@ def objective(trial):
 
     MODEL_IDX = trial.suggest_inte('MODEL_IDX', 0, 3)
 
-    model, transforms = get_MobileNet_V3_L()
-    model = model.to(DEVICE)
+    model, transforms = models[MODEL_IDX]()
+    model = model.to(device)
 
     df = pd.read_csv('data/mm-food-100k/mm-food-100k.csv')
     train_df, test_df = train_test_split(df, test_size=0.1, random_state=SEED)
