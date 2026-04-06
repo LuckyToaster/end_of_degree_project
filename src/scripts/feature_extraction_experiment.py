@@ -1,26 +1,33 @@
 import torch
-
 import optuna
+from src.models import get_EfficientNet_B3, get_EfficientNet_V2_S, get_EfficientNet_V2_M, get_EfficientNet_V2_L, \
+    get_MobileNet_V3_L, get_Swin_V2_S, get_Swin_V2_B 
 
-# 1. Define an objective function to be maximized.
+# biggest models that can be ran: EN_B3, EF_V2_M?, MN_V2_L, S_V2_S
+models = [get_EfficientNet_B3, get_EfficientNet_V2_S, get_MobileNet_V3_L, get_Swin_V2_S]
+
 def objective(trial):
+    # DATA AUGMENT PARAMETERS
+    BATCH_SIZE = trial.suggest_categorical('BATCH_SIZE', [8, 16, 32, 64, 128])
+    LR = trial.suggest_float('LR', 0.0001, 0.01)
+    WEIGHT_DECAY = trial.suggest_float('WEIGHT_DECAY', 0.0001, 0.005)
 
-    # 2. Suggest values of the hyperparameters using a trial object.
-    n_layers = trial.suggest_int('n_layers', 1, 3)
-    layers = []
+    # PREPARE DATA
+    transforms = make_transforms_rgb(INPUT_DIM, V_FLIP, H_FLIP, PERSPECTIVE, PERSPECTIVE_P, ROTATION, BRIGHTNESS, CONTRAST, SATURATION, HUE)
+    datasets = make_datasets(transforms, './cards/train', './cards/valid', './cards/test')
+    dataloaders = make_dataloaders(datasets, BATCH_SIZE)
 
-    in_features = 28 * 28
-    for i in range(n_layers):
-        out_features = trial.suggest_int(f'n_units_l{i}', 4, 128)
-        layers.append(torch.nn.Linear(in_features, out_features))
-        layers.append(torch.nn.ReLU())
-        in_features = out_features
-    layers.append(torch.nn.Linear(in_features, 10))
-    layers.append(torch.nn.LogSoftmax(dim=1))
-    model = torch.nn.Sequential(*layers).to(torch.device('cpu'))
-    ...
-    return accuracy
+    # INSTANTIATING OUR MODEL, LOSS AND OPTIMIZER
+    model = MiniVGG_RGB(INPUT_DIM, len(datasets['train'].classes), DROPOUT).to(device)
+    criterion = CrossEntropyLoss()
+    optimizer = AdamW(model.parameters(), weight_decay=WEIGHT_DECAY, lr=LR) 
+    scheduler = ReduceLROnPlateau(optimizer, mode='min', factor=0.5, patience=2)
 
-# 3. Create a study object and optimize the objective function.
-study = optuna.create_study(direction='maximize')
-study.optimize(objective, n_trials=100)
+    # TRAINING AND EVALUATING THE MODEL
+    train_model_with_scheduler(device, model, dataloaders, EPOCHS, criterion, optimizer, scheduler)
+    _, y_true, y_pred, _ = evaluate_model_tta(device, model, dataloaders['test'])
+    return f1_score(y_true, y_pred, average='weighted')
+
+
+study = optuna.create_study(study_name='vgg_rgb_25_epochs_112_inputsize_3', storage='sqlite:///cnn_classifier.db', direction="maximize")
+study.optimize(objective, n_trials=50)
