@@ -1,10 +1,7 @@
 from torch.utils.data import Dataset
-from PIL import Image, ImageFile
-from torch import tensor, from_numpy
+from PIL import Image 
+from torch import from_numpy
 from random import randint
-# from torchvision import tv_tensors as tv
-# Ignore truncated file error
-# ImageFile.LOAD_TRUNCATED_IMAGES = True
 
 class MMFood100KDataset(Dataset):
     def __init__(self, df, transform, input='img_path', targets=['fat_g', 'protein_g', 'carb_g']):

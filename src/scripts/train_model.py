@@ -9,7 +9,7 @@ from src.helpers.ml import standardize, train_eval_loop
 
 # MAX BATCH SIZES
 # EN_B3 = 32, EN_V2_S = 32, MN_V3_L = 256, S_V2_S = 32
-from src.models import get_EfficientNet_B3, get_EfficientNet_V2_S, get_MobileNet_V3_L, get_Swin_V2_S
+from src.helpers.models import get_EfficientNet_B3, get_EfficientNet_V2_S, get_MobileNet_V3_L, get_Swin_V2_S
 
 torch.cuda.empty_cache() if torch.cuda.is_available() else print('NO CUDA 🙉')
 DEVICE = torch.device("cuda" if torch.cuda.is_available() else "cpu")

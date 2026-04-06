@@ -85,7 +85,6 @@ class MMFood100KBuilder:
         
         # Check source images
         self.df = self.df[self.df['img_path'].apply(os.path.exists)]
-        
         # Check resized images if requested
         if check_resized:
             self.df = self.df[self.df['resized_img_path'].apply(os.path.exists)]
@@ -94,5 +93,3 @@ class MMFood100KBuilder:
         if dropped > 0:
             print(f'Syncing CSV: Dropped {dropped} rows due to missing files.')
             self.df.to_csv(self.csv_path, index=False)
-        else:
-            print('CSV is in sync with filesystem ✅')

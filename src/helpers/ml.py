@@ -3,7 +3,6 @@ from sklearn.preprocessing import StandardScaler
 from torch.nn.utils import clip_grad_norm_
 import torch
 
-
 __all__ = ['train_eval_loop', 'validate', 'standardize']
 
 
@@ -19,7 +18,6 @@ def train_eval_loop(model, epochs, train_loader, test_loader, criterion, optimiz
         res_train = [round(l, 4) for l  in losses['train'][-1]]
         res_val = [round(l, 4) for l in losses['val'][-1]]
         print(f'Epoch {epoch+1} Complete - Train Losses {res_train}, Val Losses: {res_val}')
-        # print(f"Epoch {epoch+1} Complete - Train Loss: {losses['train'][-1]:.4f}, Val Loss: {losses['val'][-1]:.4f}")
     return losses
 
 

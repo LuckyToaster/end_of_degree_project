@@ -4,7 +4,7 @@ from torch.utils.data import DataLoader
 from sklearn.model_selection import train_test_split
 from src.mmfood100k.dataset import MMFood100KDataset
 from src.helpers.ml import standardize, train_eval_loop
-from src.models import get_EfficientNet_B3, get_EfficientNet_V2_S, get_MobileNet_V3_L, get_Swin_V2_S 
+from src.helpers.models import get_EfficientNet_B3, get_EfficientNet_V2_S, get_MobileNet_V3_L, get_Swin_V2_S 
 
 linear_scaling = lambda lr, old_bs, new_bs: lr * (new_bs / old_bs)
 INPUT = 'resized_img_path'
