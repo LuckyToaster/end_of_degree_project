@@ -13,7 +13,7 @@ class MMFood100KDataset(Dataset):
         self.targets = df[targets].values.astype('float32') # numpy array for speed
 
     def _get_rand_item(self):
-        idx = randint(0, len(self))
+        idx = randint(0, len(self) - 1)
         input = Image.open(self.paths[idx]).convert('RGB') 
         input = self.transform(input) if self.transform else input
         targets = from_numpy(self.targets[idx])
