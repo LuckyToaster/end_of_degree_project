@@ -52,8 +52,6 @@ def objective(trial):
     elif LOSS == 'MSE': criterion = torch.nn.MSELoss()
     else: criterion = torch.nn.HuberLoss()
 
-    # --- STEP 1: Feature Extraction (Only train the head) ---
-    print(f"\n>>> Starting Feature Extraction: {FE_EPOCHS} epochs, LR={FE_LR}")
     optimizer = torch.optim.AdamW(model.classifier.parameters(), lr=FE_LR, weight_decay=FE_WEIGHT_DECAY)
     
     train_eval_loop(
@@ -66,11 +64,8 @@ def objective(trial):
         device = device
     )
 
-    # --- STEP 2: Fine-Tuning (Train everything) ---
-    print(f"\n>>> Starting Fine-Tuning: {FT_EPOCHS} epochs, FT_LR={FT_LR}, FE_LR={FE_LR}")
     unfreeze(model)
 
-    # Use correct attribute names: model.features (backbone) and model.classifier (head)
     optimizer = torch.optim.AdamW([
         {'params': model.features.parameters(), 'lr': FT_LR}, 
         {'params': model.classifier.parameters(), 'lr': FE_LR}
