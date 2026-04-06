@@ -13,7 +13,7 @@ torch.cuda.empty_cache() if torch.cuda.is_available() else print('NO CUDA 🙉')
 DEVICE = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 SEED = 1
 EPOCHS = 2
-BATCH_SIZE = 64
+BATCH_SIZE = 32
 LR = 1e-4
 TARGETS = ['fat_g', 'carb_g', 'protein_g']
 
