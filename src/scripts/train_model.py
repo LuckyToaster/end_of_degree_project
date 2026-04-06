@@ -15,13 +15,13 @@ torch.cuda.empty_cache() if torch.cuda.is_available() else print('NO CUDA 🙉')
 DEVICE = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 SEED = 1
 EPOCHS = 2
-BATCH_SIZE = 128
+BATCH_SIZE = 256
 LR = 1e-4
 TARGETS = ['fat_g', 'carb_g', 'protein_g']
 
 
 if __name__ == '__main__':
-    model, transforms = get_EfficientNet_B3()
+    model, transforms = get_MobileNet_V3_L()
     model = model.to(DEVICE)
 
     df = pd.read_csv('data/mm-food-100k/mm-food-100k.csv')
