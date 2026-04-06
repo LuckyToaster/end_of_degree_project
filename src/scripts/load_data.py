@@ -7,6 +7,7 @@ async def main():
     await builder.download_imgs()
     await builder.drop_corrupted_imgs()
     builder.resize_images()
+    builder.sync_csv_with_files(check_resized=True)
 
 
 if __name__ == '__main__':

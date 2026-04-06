@@ -3,6 +3,7 @@ from src.helpers.files import remove_files, missing_paths
 import pandas as pd
 from pathlib import Path
 import json
+import os
 
 
 class MMFood100KBuilder:
@@ -20,23 +21,27 @@ class MMFood100KBuilder:
         self.imgs_dir.mkdir(parents=True, exist_ok=True)
         self.resized_imgs_dir.mkdir(parents=True, exist_ok=True)
 
-        print(f'Downloading {self.csv_path}')
-        self.df = pd.read_csv(self.URL)
+        if not self.csv_path.exists():
+            print(f'Downloading {self.csv_path}')
+            self.df = pd.read_csv(self.URL)
 
-        self.df = self.df.rename(columns={'image_url': 'img_url'})
-        img_suffixes = self.df['img_url'].apply(lambda x: Path(x).suffix).tolist()
-        self.df['img_path'] = str(self.imgs_dir) + '/' + self.df.index.astype(str) + img_suffixes
-        self.df['resized_img_path'] = str(self.resized_imgs_dir) + '/' + self.df.index.astype(str) + '.jpeg'
-        target_cols = ['fat_g', 'carb_g', 'protein_g', 'kcal']
-        target_names = ['fat_g', 'carbohydrate_g', 'protein_g', 'calories_kcal']
-        self.df[target_cols] = self.df['nutritional_profile'].apply(lambda x: pd.Series(json.loads(x)))[target_names]
-        self.df[target_cols] = self.df[target_cols].astype(float)
+            self.df = self.df.rename(columns={'image_url': 'img_url'})
+            img_suffixes = self.df['img_url'].apply(lambda x: Path(x).suffix).tolist()
+            self.df['img_path'] = str(self.imgs_dir) + '/' + self.df.index.astype(str) + img_suffixes
+            self.df['resized_img_path'] = str(self.resized_imgs_dir) + '/' + self.df.index.astype(str) + '.jpeg'
+            target_cols = ['fat_g', 'carb_g', 'protein_g', 'kcal']
+            target_names = ['fat_g', 'carbohydrate_g', 'protein_g', 'calories_kcal']
+            self.df[target_cols] = self.df['nutritional_profile'].apply(lambda x: pd.Series(json.loads(x)))[target_names]
+            self.df[target_cols] = self.df[target_cols].astype(float)
 
-        cols_to_drop = list(set(self.df.columns) - set(self.COLS_TO_KEEP))
-        self.df = self.df.drop(columns=cols_to_drop)
+            cols_to_drop = list(set(self.df.columns) - set(self.COLS_TO_KEEP))
+            self.df = self.df.drop(columns=cols_to_drop)
 
-        print(f'Saving wrangled CSV')
-        self.df.to_csv(self.csv_path, index=False)
+            print(f'Saving wrangled CSV')
+            self.df.to_csv(self.csv_path, index=False)
+        else:
+            print(f'Loading existing CSV from {self.csv_path}')
+            self.df = pd.read_csv(self.csv_path)
 
 
     async def download_imgs(self, limit=10):
@@ -47,6 +52,8 @@ class MMFood100KBuilder:
             urls = self.df.loc[mask, 'img_url'].tolist()
             paths = self.df.loc[mask, 'img_path'].tolist()
             await download_images(urls, paths, limit, f'{self.imgs_dir} => Downloading any missing images')
+            # After a download attempt, we should sync to see if any downloads failed
+            self.sync_csv_with_files(check_resized=False)
 
 
     async def drop_corrupted_imgs(self):
@@ -56,8 +63,7 @@ class MMFood100KBuilder:
             return 
 
         remove_files(corrupted_paths, f'{self.imgs_dir} => Removing corrupted images', 'img') 
-        self.df = self.df[ ~self.df['img_path'].isin(corrupted_paths) ]
-        self.df.to_csv(self.csv_path, index=False)
+        self.sync_csv_with_files(check_resized=False)
 
 
     def resize_images(self):
@@ -67,3 +73,26 @@ class MMFood100KBuilder:
         src_paths = self.df.loc[mask, 'img_path'].tolist()
         dst_paths = self.df.loc[mask, 'resized_img_path'].tolist()
         resize_images(src_paths, dst_paths, self.img_size)
+        # Final sync to ensure resized images actually exist
+        self.sync_csv_with_files(check_resized=True)
+
+
+    def sync_csv_with_files(self, check_resized=True):
+        '''
+            Removes rows from the CSV if the corresponding image files don't exist.
+        '''
+        initial_len = len(self.df)
+        
+        # Check source images
+        self.df = self.df[self.df['img_path'].apply(os.path.exists)]
+        
+        # Check resized images if requested
+        if check_resized:
+            self.df = self.df[self.df['resized_img_path'].apply(os.path.exists)]
+            
+        dropped = initial_len - len(self.df)
+        if dropped > 0:
+            print(f'Syncing CSV: Dropped {dropped} rows due to missing files.')
+            self.df.to_csv(self.csv_path, index=False)
+        else:
+            print('CSV is in sync with filesystem ✅')
