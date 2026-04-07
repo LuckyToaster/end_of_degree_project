@@ -67,11 +67,12 @@ if __name__ == '__main__':
     train_df, test_df = train_test_split(df, test_size=0.1, random_state=SEED)
     train_df[TARGETS], test_df[TARGETS] = standardize(train_df[TARGETS], test_df[TARGETS])
 
+    search_space = { 'MODEL': list(MODEL_CONFIGS.keys()) }
     study = optuna.create_study(
         study_name='model_shootout_v1', 
         storage='sqlite:///model_shootout.db', 
+        sampler=optuna.samplers.GridSampler(search_space),
         direction='minimize',
         load_if_exists=True
     )
     study.optimize(objective, n_trials=10)
-
