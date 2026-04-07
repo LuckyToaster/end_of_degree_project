@@ -3,7 +3,7 @@ import pandas as pd
 from torch.utils.data import DataLoader
 from torch import nn
 from sklearn.model_selection import train_test_split
-from torchvision.models import mobilenet_v3_large, MobileNet_V3_Large_Weights
+from torchvision.models import mobilenet_v3_large, MobileNet_V3_Large_Weights, swin_v2_s, Swin_V2_S_Weights
 
 from src.mmfood100k.dataset import MMFood100KDataset
 from src.helpers.models import freeze, unfreeze
@@ -26,20 +26,30 @@ def objective(trial):
     FT_EPOCHS = trial.suggest_int('ft_epochs', 10, 50)
     LOSS = trial.suggest_categorical('loss', ['L1', 'MSE', 'Huber'])
 
-    weights = MobileNet_V3_Large_Weights.DEFAULT
+    weights = Swin_V2_S_Weights.DEFAULT
     transforms = weights.transforms()
-    model = mobilenet_v3_large(weights=weights)
+    model = swin_v2_s(weights=weights)
+
     freeze(model)
-    # 2. Correctly adapt the head for regression
-    # MobileNetV3 classifier input is 960 features
-    in_features = model.classifier[0].in_features 
-    # Replace the entire classifier to avoid shape mismatches
-    model.classifier = nn.Sequential(
-        nn.Linear(in_features, N_UNITS),
+
+    # Adapt the head
+    model.head = nn.Sequential(
+        nn.Linear(model.head.in_features, N_UNITS),
         nn.ReLU(),
         nn.Dropout(DROPOUT),
         nn.Linear(N_UNITS, 3)
     )
+
+    # 2. Correctly adapt the head for regression
+    # MobileNetV3 classifier input is 960 features
+    # in_features = model.classifier[0].in_features 
+    # Replace the entire classifier to avoid shape mismatches
+    # model.classifier = nn.Sequential(
+    #     nn.Linear(in_features, N_UNITS),
+    #     nn.ReLU(),
+    #     nn.Dropout(DROPOUT),
+    #     nn.Linear(N_UNITS, 3)
+    # )
 
     model = model.to(device)
 
@@ -52,7 +62,7 @@ def objective(trial):
     elif LOSS == 'MSE': criterion = torch.nn.MSELoss()
     else: criterion = torch.nn.HuberLoss()
 
-    optimizer = torch.optim.AdamW(model.classifier.parameters(), lr=FE_LR, weight_decay=FE_WEIGHT_DECAY)
+    optimizer = torch.optim.AdamW(model.head.parameters(), lr=FE_LR, weight_decay=FE_WEIGHT_DECAY)
     
     train_eval_loop(
         model = model,
@@ -68,7 +78,7 @@ def objective(trial):
 
     optimizer = torch.optim.AdamW([
         {'params': model.features.parameters(), 'lr': FT_LR}, 
-        {'params': model.classifier.parameters(), 'lr': FE_LR}
+        {'params': model.head.parameters(), 'lr': FE_LR}
     ], weight_decay=FT_WEIGHT_DECAY)
 
     ft_results = train_eval_loop(
