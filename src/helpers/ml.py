@@ -9,10 +9,11 @@ __all__ = ['train_eval_loop', 'validate', 'standardize', 'lr_linear_scaling']
 lr_linear_scaling = lambda lr, old_bs, new_bs: lr * (new_bs / old_bs)
 
 
-def train_eval_loop(model, epochs, train_loader, test_loader, criterion, optimizer, device):
+def train_eval_loop(model, epochs, train_loader, test_loader, criterion, optimizer, device, trial=None, starting_epoch=0):
     losses = {'train': [], 'val': []}
     for epoch in range(epochs): 
-        train_losses = train_epoch(model, train_loader, criterion, optimizer, device, epoch)
+        actual_epoch = starting_epoch + epoch
+        train_losses = train_epoch(model, train_loader, criterion, optimizer, device, actual_epoch)
         val_losses = validate(test_loader, model, criterion, device)
 
         losses['train'].append(train_losses)
@@ -20,7 +21,16 @@ def train_eval_loop(model, epochs, train_loader, test_loader, criterion, optimiz
 
         res_train = [round(l, 4) for l  in losses['train'][-1]]
         res_val = [round(l, 4) for l in losses['val'][-1]]
-        print(f'Epoch {epoch+1} Complete - Train Losses {res_train}, Val Losses: {res_val}')
+        print(f'Epoch {actual_epoch+1} Complete - Train Losses {res_train}, Val Losses: {res_val}')
+
+        if trial is not None:
+            # Report the last value (average loss)
+            trial.report(val_losses[-1], actual_epoch)
+            
+            if trial.should_prune():
+                import optuna
+                raise optuna.TrialPruned()
+
     return losses
 
 
