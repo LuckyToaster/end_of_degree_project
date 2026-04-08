@@ -12,7 +12,7 @@ from src.helpers.ml import standardize, train_eval_loop
 INPUT = 'resized_img_path'
 TARGETS = ['fat_g', 'carb_g', 'protein_g']
 SEED = 1
-BS = 128
+BS = 32
 
 
 def objective(trial):
