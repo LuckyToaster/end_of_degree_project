@@ -95,7 +95,7 @@ if __name__ == '__main__':
     train_df[TARGETS], test_df[TARGETS] = standardize(train_df[TARGETS], test_df[TARGETS])
 
     study = optuna.create_study(
-        study_name='sequential_fine_tuning_v3', 
+        study_name='sequential_fine_tuning', 
         storage='sqlite:///sequential_fine_tuning.db', 
         direction='minimize',
         load_if_exists=True,
