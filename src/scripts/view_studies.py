@@ -11,8 +11,8 @@ model_shootout_study = optuna.load_study(
 )
 
 sequential_fine_tuning_study = optuna.load_study(
-    study_name="model_shootout_v1", 
-    storage="sqlite:///model_shootout.db"
+    study_name="sequential_fine_tuning", 
+    storage="sqlite:///sequential_fine_tuning.db"
 )
 
 df1 = model_shootout_study.trials_dataframe()
