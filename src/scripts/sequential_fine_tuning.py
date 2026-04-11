@@ -8,6 +8,7 @@ from torchvision.models import swin_v2_s, Swin_V2_S_Weights
 from src.mmfood100k.dataset import MMFood100KDataset
 from src.helpers.models import freeze, unfreeze
 from src.helpers.ml import standardize, train_eval_loop
+import gc
 
 INPUT = 'resized_img_path'
 TARGETS = ['fat_g', 'carb_g', 'protein_g']
@@ -81,8 +82,13 @@ def objective(trial):
             weight_decay=FT_WEIGHT_DECAY
         )
     )
-    
     last_epoch_avg_loss = ft_results['val'][-1][-1]
+
+    # clean shit up
+    del model, train_ds, test_ds, train_loader, test_loader
+    gc.collect()
+    torch.cuda.empty_cache()
+
     return last_epoch_avg_loss
 
 
