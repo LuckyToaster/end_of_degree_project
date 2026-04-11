@@ -8,6 +8,6 @@ study = optuna.load_study(
 running_trials = [t for t in study.trials if t.state == optuna.trial.TrialState.RUNNING]
 for trial in running_trials:
     # Mark the stuck trial as failed
-    study._storage.set_trial_state(trial._trial_id, optuna.trial.TrialState.FAIL)
+    study.tell(trial.number, state=optuna.trial.TrialState.FAIL)  
     # Enqueue the exact same hyperparameters to be tried again
     study.enqueue_trial(trial.params)
