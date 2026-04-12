@@ -49,47 +49,54 @@ def objective(trial):
     train_loader = DataLoader(train_ds, batch_size=BS, shuffle=True, num_workers=8, pin_memory=True, persistent_workers=True)
     test_loader = DataLoader(test_ds, batch_size=BS, shuffle=True, num_workers=8, pin_memory=True, persistent_workers=True)
 
-    criterions = { 'L1': L1Loss(), 'MSE': MSELoss(), 'Huber': HuberLoss() }
+    try:
+        criterions = { 'L1': L1Loss(), 'MSE': MSELoss(), 'Huber': HuberLoss() }
 
-    train_eval_loop(
-        model = model,
-        epochs = FE_EPOCHS,
-        train_loader = train_loader,
-        test_loader = test_loader,
-        criterion = criterions[LOSS],
-        device = device,
-        trial = trial,
-        starting_epoch = 0,
-        optimizer = torch.optim.AdamW(model.head.parameters(), lr=FE_LR, weight_decay=FE_WEIGHT_DECAY),
-    )
-
-    unfreeze(model)
-
-    ft_results = train_eval_loop(
-        model = model,
-        epochs = FT_EPOCHS,
-        train_loader = train_loader,
-        test_loader = test_loader,
-        criterion = criterions[LOSS],
-        device = device,
-        trial = trial,
-        starting_epoch = FE_EPOCHS,
-        optimizer = torch.optim.AdamW(
-            [
-                {'params': model.features.parameters(), 'lr': FT_LR}, 
-                {'params': model.head.parameters(), 'lr': FE_LR}
-            ], 
-            weight_decay=FT_WEIGHT_DECAY
+        train_eval_loop(
+            model = model,
+            epochs = FE_EPOCHS,
+            train_loader = train_loader,
+            test_loader = test_loader,
+            criterion = criterions[LOSS],
+            device = device,
+            trial = trial,
+            starting_epoch = 0,
+            optimizer = torch.optim.AdamW(model.head.parameters(), lr=FE_LR, weight_decay=FE_WEIGHT_DECAY),
         )
-    )
-    last_epoch_avg_loss = ft_results['val'][-1][-1]
 
-    # clean shit up
-    del model, train_ds, test_ds, train_loader, test_loader
-    gc.collect()
-    torch.cuda.empty_cache()
+        unfreeze(model)
 
-    return last_epoch_avg_loss
+        ft_results = train_eval_loop(
+            model = model,
+            epochs = FT_EPOCHS,
+            train_loader = train_loader,
+            test_loader = test_loader,
+            criterion = criterions[LOSS],
+            device = device,
+            trial = trial,
+            starting_epoch = FE_EPOCHS,
+            optimizer = torch.optim.AdamW(
+                [
+                    {'params': model.features.parameters(), 'lr': FT_LR}, 
+                    {'params': model.head.parameters(), 'lr': FE_LR}
+                ], 
+                weight_decay=FT_WEIGHT_DECAY
+            )
+        )
+
+        last_epoch_avg_loss = ft_results['val'][-1][-1]
+        return last_epoch_avg_loss
+
+    finally:
+        # clean shit up to avoid linux killing process due to OOM 
+        if 'model' in locals(): del model
+        if 'train_ds' in locals(): del train_ds
+        if 'test_ds' in locals(): del test_ds
+        if 'train_loader' in locals(): del train_loader
+        if 'test_loader' in locals(): del test_loader
+        gc.collect()
+        torch.cuda.empty_cache()
+
 
 
 if __name__ == '__main__':
