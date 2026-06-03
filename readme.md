@@ -2,8 +2,10 @@
 
 ## Requirements
 - Linux machine
-- Python version 3.14 
 - Git
+- Python version 3.14 
+- [UV](https://docs.astral.sh/uv/getting-started/installation/) Python package manager and build system
+
 
 ## Run the project
 ```bash
@@ -15,4 +17,5 @@
     python -m src.scripts.load_data
     python -m pytest -v
 ```
+
 

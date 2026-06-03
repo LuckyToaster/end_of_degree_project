@@ -8,14 +8,20 @@ csl: ieee.csl
 link-citations: true
 ---
 
+# Abstract
+
+
 # Aim
-The goal of this work is to systematically explore ways in which to predict the macronutrient mass (in grams) from food images.
-Obtaining SOTA accuracy presents a significant challenge, and in order to address this, our work will be research driven, 
-as we believe that in order to achieve SOTA results, we must make decisions that are anchored in the literature.
+The goal of this work is to systematically explore ways in which to predict the macronutrient mass (in grams) from food images.  
+Predictions were made from 1) A single image and 2) No reference object for size in the image.
+These rules served to limit the scope of the project, to allow for the use of the same dataset, and to make a general solution that is suitable for real world applications
+
+Obtaining SOTA accuracy presented a significant challenge, in order to address this, the work adopted both an experimental and a research driven aproach.
+First it is believed that in order to achieve SOTA results, decisions must be anchored in the literature. And second, in order to make a work that is thorough and of decent quality, 
+it should adhere to the scientific method, or at the very least be backed by some degree of research and hypothesis testing.
 
 # The Data
-We are using the **[MM-Food-100K Dataset](https://huggingface.co/datasets/Codatta/MM-Food-100K)**, which contains ~100K labeled images of restaurant and home cooked food. 
-Another notable dataset is the **[Food101 Dataset](https://huggingface.co/datasets/ethz/food101)**, for classification tasks, which we have seen being used by @efficientnet for transfer learning on ImageNet pretrained CNNs
+The dataset used is the **[MM-Food-100K Dataset](https://huggingface.co/datasets/Codatta/MM-Food-100K)**, which contains ~100K labeled images of restaurant and home cooked food. 
 
 # Hardware Limitations
 In the last decade, the computer vision landscape has been filled with CNN's, however, in recent years, Vision Transformer have come out and they seem to be the SOTA. While we would like to eventually experiment with Vision Transformers, 

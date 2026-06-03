@@ -1,4 +1,4 @@
-from src.helpers.images import download_images, resize_images, get_corrupted_images
+from src.helpers.images import get_corrupted_images, download_and_resize_images
 from src.helpers.files import remove_files, missing_paths
 import pandas as pd
 from pathlib import Path
@@ -66,15 +66,24 @@ class MMFood100KBuilder:
         self.sync_csv_with_files(check_resized=False)
 
 
-    def resize_images(self):
+    # def resize_images(self):
+    #     missing = missing_paths(self.df['img_path'].tolist())
+    #     if not missing: return
+    #     mask = self.df['resized_img_path'].isin(missing)
+    #     src_paths = self.df.loc[mask, 'img_path'].tolist()
+    #     dst_paths = self.df.loc[mask, 'resized_img_path'].tolist()
+    #     resize_images(src_paths, dst_paths, self.img_size)
+    #     # Final sync to ensure resized images actually exist
+    #     self.sync_csv_with_files(check_resized=True)
+
+
+    def download_and_resize_images(self):
         missing = missing_paths(self.df['resized_img_path'].tolist())
         if not missing: return
         mask = self.df['resized_img_path'].isin(missing)
-        src_paths = self.df.loc[mask, 'img_path'].tolist()
+        urls = self.df.loc[mask, 'img_url'].tolist()
         dst_paths = self.df.loc[mask, 'resized_img_path'].tolist()
-        resize_images(src_paths, dst_paths, self.img_size)
-        # Final sync to ensure resized images actually exist
-        self.sync_csv_with_files(check_resized=True)
+        download_and_resize_images(urls, dst_paths, size=self.img_size)
 
 
     def sync_csv_with_files(self, check_resized=True):
