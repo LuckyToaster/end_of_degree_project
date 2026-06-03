@@ -22,7 +22,8 @@ MODEL_CONFIGS = {
     },
     'MobileNet_V3_L': { 
         'func': get_MobileNet_V3_L, 
-        'bs': 256, 
+        'bs': 32
+        #'bs': 256, 
     },
     'Swin_V2_S': { 
         'func': get_Swin_V2_S, 

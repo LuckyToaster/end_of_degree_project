@@ -10,21 +10,44 @@ link-citations: true
 
 # Abstract
 
-
 # Aim
-The goal of this work is to systematically explore ways in which to predict the macronutrient mass (in grams) from food images.  
-Predictions were made from 1) A single image and 2) No reference object for size in the image.
-These rules served to limit the scope of the project, to allow for the use of the same dataset, and to make a general solution that is suitable for real world applications
+The goal of this work is to systematically explore ways in which to predict the macronutrient mass (in grams) from food images.  Predictions 
+were made from 1) a single image and 2) no reference object for size in the image. These rules served to limit the scope of the project, 
+to allow for the use of the same dataset, and to make a general solution that is suitable for real world applications
 
-Obtaining SOTA accuracy presented a significant challenge, in order to address this, the work adopted both an experimental and a research driven aproach.
-First it is believed that in order to achieve SOTA results, decisions must be anchored in the literature. And second, in order to make a work that is thorough and of decent quality, 
-it should adhere to the scientific method, or at the very least be backed by some degree of research and hypothesis testing.
+Achieving SOTA quality presented a significant challenge. In order to accomplish this,
+the project adopted an experimental and research driven approach, 
+using the literature to justify decisions and hypotheses, and testing those hypotheses through experimentation,
+thus adhering to the scientific method
 
 # The Data
-The dataset used is the **[MM-Food-100K Dataset](https://huggingface.co/datasets/Codatta/MM-Food-100K)**, which contains ~100K labeled images of restaurant and home cooked food. 
+The dataset used was the **[MM-Food-100K Dataset](https://huggingface.co/datasets/Codatta/MM-Food-100K)**, which contains ~100K labeled images of restaurant and home cooked food.
+It was chosen because the images are labelled with nutrionional information needed for this work, for of its large size, 
+and because of its diversity: featuring different dish sizes, cuisines, lighting, camera-quality ... etc.
+
+# 1st Experiment: Multi-ouput Regression using Vision Transformer
+
+In order to determine which CNN architecture was best, a **model shootout** study was carried out comparing the following pretrained CNNs (and a vision transfoermer)
+- EfficientNet_B3 
+- EfficientNet_V2_S
+- MobileNet_V3_L
+- Swin_V2_S
+
+The variant of each model was chosen as the biggest variant that could fit on a **16GB VRAM RTX 3060 ti** GPU. 
+The study was performed by training all models with the same hyperparameters
+
+The hyperparameters:
+- **Batch size:** 32 (except for MobileNetV3_L which could accept a batch size of 256
+- 
+
+# 2nd Experiment:
+
 
 # Hardware Limitations
-In the last decade, the computer vision landscape has been filled with CNN's, however, in recent years, Vision Transformer have come out and they seem to be the SOTA. While we would like to eventually experiment with Vision Transformers, 
+In the last decade, the computer vision landscape has been filled with CNN's, however, in recent years, Vision Transformers have become SOTA. 
+Different CNNs  
+
+While we would like to eventually experiment with Vision Transformers, 
 we are aware that they are computationally expensive and require larger datasets than what we own. 
 Seeing it that we are working with a __4GB VRAM limitation__, for now we have directed our attention towards the SOTA in CNNs
 
