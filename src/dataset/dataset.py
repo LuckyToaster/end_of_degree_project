@@ -3,7 +3,7 @@ from PIL import Image
 from torch import from_numpy
 from random import randint
 
-class MMFood100KDataset(Dataset):
+class FoodDataset(Dataset):
     def __init__(self, df, transform, input='img_path', targets=['fat_g', 'protein_g', 'carb_g']):
         self.transform = transform
         self.paths = df[input].tolist() # python list for fast indexing

@@ -4,7 +4,8 @@ from os import cpu_count
 from sys import stderr
 from tqdm import tqdm
 
-__all__ = ['remove_files', 'missing_paths']
+__all__ = ['remove_files' ]
+
 
 def remove_files(paths: list[str], tqdm_desc='Removing files', tqdm_unit='file') -> None:
     try:
@@ -12,10 +13,6 @@ def remove_files(paths: list[str], tqdm_desc='Removing files', tqdm_unit='file')
             list(tqdm(executor.map(_rm_file, paths), total=len(paths), desc=tqdm_desc, unit=tqdm_unit))
     except (RuntimeError, Exception) as e:
         print(f'remove_files(): {e}')
-
-
-def missing_paths(paths: list[str]):
-    return [p for p in paths if not Path(p).exists()]
 
 
 def _rm_file(path: str):
