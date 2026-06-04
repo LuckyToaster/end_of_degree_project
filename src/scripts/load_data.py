@@ -20,19 +20,27 @@ def main():
     if Path(CSV_PATH).exists(): 
         df = pd.read_csv(CSV_PATH)
     else: 
+        print('Downloading .csv')
         df = pd.read_csv(URL)
         df = reshape(df)
         df.to_csv(CSV_PATH, index=False)
 
+    # download missing images but remove from csv failed downloads / reshapes
     missing_urls, missing_paths = get_missing_urls_and_paths(df)
-    download_and_resize_images(missing_urls, missing_paths, size=IMG_SIZE)
+    failed_urls = download_and_resize_images(missing_urls, missing_paths, size=IMG_SIZE)
+    if failed_urls: df = df.loc[~df['img_url'].isin(failed_urls)]
 
-    # removed corrupted images from IMG_DIR and from .csv 
-    corrupted = [ path for path, _ in get_corrupted_images(IMG_DIR)]
-    if corrupted: 
-        remove_files(corrupted)
-        df = df[~df['img_path'].isin(corrupted)] 
-        df.to_csv(CSV_PATH, index=False)
+    # check for corrupted images and remove them
+    corrupted_paths = [path for path, _ in get_corrupted_images(IMG_DIR)]
+    if corrupted_paths: 
+        remove_files(corrupted_paths)
+        df = df[~df['img_path'].isin(corrupted_paths)] 
+
+    print(f'Removing {len(failed_urls)} failed downloads/resizes and {len(corrupted_paths)} corrupted images')
+    
+    # save the cleaned csv
+    df.to_csv(CSV_PATH, index=False)
+    print(f"Dataset successfully cleaned and saved. Total valid images: {len(df)}")
 
 
 def reshape(df: DataFrame):

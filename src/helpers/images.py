@@ -18,6 +18,7 @@ def download_and_resize_images(urls, dst_paths, size=256):
     '''
         Download images in urls, resize them to size (keeping aspect ratio) and save them in dst_paths
     '''
+    if not urls or not dst_paths: return []
     dst_dir = str(Path(dst_paths[0]).parent)
     with ProcessPoolExecutor(max_workers=cpu_count()) as executor:
         failed_urls = list(tqdm(
@@ -27,7 +28,7 @@ def download_and_resize_images(urls, dst_paths, size=256):
             unit='img',
             file=sys.stdout
         ))
-    return failed_urls
+    return [url for url in failed_urls if url is not None]
 
 
 def get_corrupted_images(imgs_dir: str):
@@ -44,8 +45,6 @@ def get_corrupted_images(imgs_dir: str):
             file=sys.stdout
         ))
     return [r for r in results if r is not None]
-
-
 
 
 '''
@@ -68,15 +67,12 @@ def _download_img_bytes(url):
 
 
 def _resize_and_save_bytes(img_bytes, dst_path, size):
-    try:
-        byte_tensor = torch.frombuffer(img_bytes, dtype=torch.uint8)
-        with _capture_stderr() as log:
-            img = io.decode_image(byte_tensor, mode=io.ImageReadMode.RGB)
-            transform = v2.Resize(size=size, interpolation=InterpolationMode.BICUBIC, antialias=True)
-            img = transform(img)
-            io.write_jpeg(img.as_subclass(torch.Tensor).to(torch.uint8).cpu(), dst_path, quality=95)
-    except (RuntimeError, Exception) as e: 
-        raise Exception(f'Failed to resize and save: {e}')
+    byte_tensor = torch.frombuffer(bytearray(img_bytes), dtype=torch.uint8)
+    with _capture_stderr() as log:
+        img = io.decode_image(byte_tensor, mode=io.ImageReadMode.RGB)
+        transform = v2.Resize(size=size, interpolation=InterpolationMode.BICUBIC, antialias=True)
+        img = transform(img)
+        io.write_jpeg(img.as_subclass(torch.Tensor).to(torch.uint8).cpu(), dst_path, quality=95)
 
 
 def _check_corrupted_img(path: str):
@@ -103,23 +99,3 @@ def _capture_stderr():
             finally:
                 sys.stderr.flush()
                 os.dup2(old_stderr.fileno(), stderr_fd) # Restore stderr
-
-# def _download_img(url, dst_path):
-#     response = requests.get(url)
-#     if response.status_code == 200:
-#         with open(dst_path, "wb") as f:
-#             f.write(response.content)
-#     else: raise Exception(f'Failed to Download {url}')
-
-    
-
-# def _resize_img(src_path, dst_path, size):
-#     try: 
-#         img = io.read_image(src_path, mode=io.ImageReadMode.RGB)
-#         transform = v2.Resize(size=size, interpolation=InterpolationMode.BICUBIC, antialias=True) # keeps aspect ratio, uses BICUBIC like efficientnet
-#         img = transform(img)
-#         io.write_jpeg(img.as_subclass(torch.Tensor).to(torch.uint8).cpu(), dst_path, quality=95)
-#     except (RuntimeError, Exception) as e: 
-#         raise Exception(f'Failed to resize {src_path}')
-
-

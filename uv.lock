@@ -1734,7 +1734,7 @@ dev = [
 
 [package.metadata]
 requires-dist = [
-    { name = "huggingface-hub", specifier = ">=1.17.0" },
+    { name = "huggingface-hub" },
     { name = "optuna" },
     { name = "pandas" },
     { name = "pillow" },

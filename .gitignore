@@ -1,8 +1,5 @@
-runs
-*.pt
-code/*.pt
-docs/images/
 data
 __pycache__
 **/__pycache__
 .venv
+
