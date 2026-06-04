@@ -64,9 +64,3 @@ def get_missing_urls_and_paths(df: DataFrame):
     missing_urls = df.loc[mask, 'img_url'].tolist()
     missing_paths = df.loc[mask, 'img_path'].tolist()
     return missing_urls, missing_paths
-    
-
-if __name__ == '__main__':
-    main()
-
-

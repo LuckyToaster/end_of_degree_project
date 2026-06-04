@@ -5,7 +5,7 @@ from torch import nn
 from torch.nn import HuberLoss, L1Loss, MSELoss
 from sklearn.model_selection import train_test_split
 from torchvision.models import swin_v2_s, Swin_V2_S_Weights
-from src.mmfood100k.dataset import MMFood100KDataset
+from src.dataset import FoodDataset
 from src.helpers.models import freeze, unfreeze
 from src.helpers.ml import standardize, train_eval_loop
 import gc
@@ -44,8 +44,8 @@ def objective(trial):
     )
     model = model.to(device)
 
-    train_ds = MMFood100KDataset(train_df, transform=transforms, input=INPUT, targets=TARGETS)
-    test_ds = MMFood100KDataset(test_df, transform=transforms, input=INPUT, targets=TARGETS)
+    train_ds = FoodDataset(train_df, transform=transforms, input=INPUT, targets=TARGETS)
+    test_ds = FoodDataset(test_df, transform=transforms, input=INPUT, targets=TARGETS)
     train_loader = DataLoader(train_ds, batch_size=BS, shuffle=True, num_workers=8, pin_memory=True, persistent_workers=True)
     test_loader = DataLoader(test_ds, batch_size=BS, shuffle=True, num_workers=8, pin_memory=True, persistent_workers=True)
 

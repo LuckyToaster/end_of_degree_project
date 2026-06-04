@@ -55,7 +55,7 @@ def _download_and_resize_img(url, dst_path, size):
         bytes = _download_img_bytes(url)
         _resize_and_save_bytes(bytes, dst_path, size)
     except (RuntimeError, Exception) as e: 
-        print(f'Skipping {url} => {e}')
+        # print(f'Skipping {url} => {e}')
         return url
 
 
