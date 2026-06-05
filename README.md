@@ -12,9 +12,8 @@
     git clone https://github.com/LuckyToaster/end_of_degree_project/
     cd end_of_degree_project
     uv sync
-    python env/bin/activate
-    python -m src.scripts.load_data
-    python -m pytest -v
+    python .venv/bin/activate
+    load-data 
 ```
 
 
