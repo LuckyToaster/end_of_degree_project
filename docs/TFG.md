@@ -62,8 +62,7 @@ A Neural Network can be adapted for regression by modifying the head of the netw
 and changing the criterion from Cross-Entropy loss to MSE (L2) or MAE (L1) Loss.
 
 The literature on CNNs is very classification biased, as it is centered around benchmarking on ImageNet classification.
-After reading much literature on CNN architectures, the question of whether any CNN would work well for our regression task emerged.
-
+After reading much literature on CNN architectures, the question of whether any ImageNet pretrained classification CNN would work well for our regression task emerged.
 @do_imagenet_models_transfer_better analysed how 16 model architectures perform when fine tuned, trained from scratch or used as feature extractors
 for 12 different datasets. They found that:
 
