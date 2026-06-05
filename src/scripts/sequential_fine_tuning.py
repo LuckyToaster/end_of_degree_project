@@ -1,4 +1,5 @@
 import torch, optuna
+from pathlib import Path
 import pandas as pd
 from torch.utils.data import DataLoader
 from torch import nn
@@ -10,10 +11,18 @@ from src.helpers.models import freeze, unfreeze
 from src.helpers.ml import standardize, train_eval_loop
 import gc
 
-INPUT = 'resized_img_path'
-TARGETS = ['fat_g', 'carb_g', 'protein_g']
+torch.cuda.empty_cache() if torch.cuda.is_available() else print('NO CUDA 🙉')
+device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+
+INPUT = 'img_path'
+TARGETS = ['fat_g', 'carb_g', 'prot_g']
 SEED = 1
-BS = 32
+BS = 128
+
+df = pd.read_csv('data/food_dataset.csv')
+train_df, test_df = train_test_split(df, test_size=0.1, random_state=SEED)
+train_df[TARGETS], test_df[TARGETS] = standardize(train_df[TARGETS], test_df[TARGETS])
+
 
 def get_swin_v2_s_pretrained():
     weights = Swin_V2_S_Weights.DEFAULT
@@ -98,18 +107,13 @@ def objective(trial):
         torch.cuda.empty_cache()
 
 
+def main():
 
-if __name__ == '__main__':
-    torch.cuda.empty_cache() if torch.cuda.is_available() else print('NO CUDA 🙉')
-    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-
-    df = pd.read_csv('data/mm-food-100k/mm-food-100k.csv')
-    train_df, test_df = train_test_split(df, test_size=0.1, random_state=SEED)
-    train_df[TARGETS], test_df[TARGETS] = standardize(train_df[TARGETS], test_df[TARGETS])
-
+    db_path = Path(__file__).resolve().parents[2] / 'data/studies/sequential_fine_tuning.db'
+    db_path.parent.mkdir(parents=True, exist_ok=True)
     study = optuna.create_study(
         study_name='sequential_fine_tuning', 
-        storage='sqlite:///sequential_fine_tuning.db', 
+        storage=f'sqlite:///{db_path}', 
         direction='minimize',
         load_if_exists=True,
         pruner=optuna.pruners.HyperbandPruner()

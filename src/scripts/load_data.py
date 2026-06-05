@@ -6,7 +6,7 @@ from src.helpers.images import get_corrupted_images, download_and_resize_images
 from src.helpers.files import remove_files 
 
 URL = 'hf://datasets/Codatta/MM-Food-100K/MM-Food-100K.csv' # https://huggingface.co/datasets/Codatta/MM-Food-100K
-COLS_TO_KEEP = ['img_url', 'dish_name', 'ingredient', 'cooking_method', 'img_path', 'fat_g', 'carb_g', 'protein_g', 'kcal'] 
+COLS_TO_KEEP = ['img_url', 'dish_name', 'ingredient', 'cooking_method', 'img_path', 'fat_g', 'carb_g', 'prot_g', 'kcal'] 
 DATA_DIR = 'data'
 IMG_DIR = 'data/imgs'
 CSV_PATH = 'data/food_dataset.csv'

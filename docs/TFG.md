@@ -6,8 +6,13 @@ date: \today
 bibliography: refs.bib
 csl: ieee.csl
 link-citations: true
-mainfont: "DejaVu Serif"
-sansfont: "DejaVu Sans"
+mainfont: "TeX Gyre Pagella"
+sansfont: "TeX Gyre Heros"
+geometry:
+  - top=2cm
+  - bottom=2cm
+  - left=2cm
+  - right=2cm
 ---
 
 # Abstract
@@ -52,7 +57,6 @@ so the data loading script was refactored and improved one final time so that im
 This cut the dataset size into a fraction of what it was before and improved the speed of the script somewhat as it made less I/O operations.
 
 # Multi-ouput Regression
-
 The computer vision task at hand requires multi output regression. 
 A Neural Network can be adapted for regression by modifying the head of the network
 and changing the criterion from Cross-Entropy loss to MSE (L2) or MAE (L1) Loss.
@@ -85,7 +89,7 @@ model for our data, a _"model shootout"_ study was devised.
 A study was made with the [Optuna](https://optuna.org/) library that would pick different pretrained models using grid sampling, train the models with the same hyperparameters, 
 for a fixed number of epochs using feature extraction (frozen backbone, training only the head).
 
-This was a cheap and fast way to make an educated guess to pick the model since _"when [different modelsa are] used as fixed feature extractors ..., ImageNet top-1 accuracy was 
+This was a cheap and fast way to make an educated guess to pick the model since _"when [different models are] used as fixed feature extractors ..., ImageNet top-1 accuracy was 
 correlated with accuracy on transfer learning"_ @do_imagenet_models_transfer_better .
 
 After runnign the _"model shootout"_ optuna study for four times, it was determined that out of the following models:
@@ -95,8 +99,9 @@ After runnign the _"model shootout"_ optuna study for four times, it was determi
 - MobileNet_V3_L
 - Swin_V2_S
 
-The variant of each model was chosen as the biggest variant that could fit on a _16GB VRAM RTX 3060 ti_ GPU. 
 The Swin came on top being the fastest learner, which makes sense since all the others are CNNs and Swin is a more modern Vision Transformer.
+
+The variant of each model was chosen as the biggest variant that could fit on a _16GB VRAM RTX 3060 ti_ GPU. 
 
 ## Sequential fine tuning with Hyperparameter Optimization
 
@@ -116,6 +121,7 @@ The sequential fine tuning was ran in an extensive hyperparameter optimization s
 - Loss used (MAE, MSE or Huber) 
 
 And the following hidden flat layer that was inserted before the head
+
 - number of hidden units before the head (not a hyperparameter)
 - hidden layer dropout 
 
@@ -133,7 +139,7 @@ A system was devised, that consisted of:
 - A coordinate fetching function
 - A timestamp function
 
-![diagram](lmm.png)
+![LMM enriched with metadata](lmm.png)
 
 # Results
 

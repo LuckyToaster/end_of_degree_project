@@ -32,4 +32,6 @@ packages = ["src"]
 
 [project.scripts]
 load-data='src.scripts.load_data:main'
+model-shootout='src.scripts.model_shootout:main'
+sequential-fine-tuning='src.scripts.sequential_fine_tuning:main'
 # Add your scripts here

@@ -5,4 +5,4 @@ pandoc "$1" -o "${1%.*}.pdf" \
     --number-sections --variable classoption=twocolumn \
     --variable papersize=a4 \
     --citeproc --bibliography=refs.bib \
-    --variable documentclass=scrartcl \
+    --variable documentclass=scrartcl

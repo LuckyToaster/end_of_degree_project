@@ -6,8 +6,8 @@ from src.dataset import FoodDataset
 from src.helpers.ml import standardize, train_eval_loop, lr_linear_scaling
 from src.helpers.models import get_EfficientNet_B3, get_EfficientNet_V2_S, get_MobileNet_V3_L, get_Swin_V2_S 
 
-INPUT = 'resized_img_path'
-TARGETS = ['fat_g', 'carb_g', 'protein_g']
+INPUT = 'img_path'
+TARGETS = ['fat_g', 'carb_g', 'prot_g']
 SEED = 1
 LR = 1e-3
 EPOCHS = 10
@@ -23,13 +23,18 @@ MODEL_CONFIGS = {
     'MobileNet_V3_L': { 
         'func': get_MobileNet_V3_L, 
         'bs': 32
-        #'bs': 256, 
     },
     'Swin_V2_S': { 
         'func': get_Swin_V2_S, 
         'bs': 32
     }
 }
+
+torch.cuda.empty_cache() if torch.cuda.is_available() else print('NO CUDA 🙉')
+device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+df = pd.read_csv('data/food_dataset.csv')
+train_df, test_df = train_test_split(df, test_size=0.1, random_state=SEED)
+train_df.loc[:, TARGETS], test_df.loc[:, TARGETS] = standardize(train_df[TARGETS], test_df[TARGETS])
 
 
 def objective(trial):
@@ -60,15 +65,7 @@ def objective(trial):
     return last_epoch_avg_loss
 
 
-if __name__ == '__main__':
-    torch.cuda.empty_cache() if torch.cuda.is_available() else print('NO CUDA 🙉')
-    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-    torch.cuda.empty_cache()
-
-    df = pd.read_csv('data/mm-food-100k/mm-food-100k.csv')
-    train_df, test_df = train_test_split(df, test_size=0.1, random_state=SEED)
-    train_df.loc[:, TARGETS], test_df.loc[:, TARGETS] = standardize(train_df[TARGETS], test_df[TARGETS])
-
+def main():
     search_space = { 'MODEL': list(MODEL_CONFIGS.keys()) }
     study = optuna.create_study(
         study_name='model_shootout_v2', 
