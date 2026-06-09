@@ -15,6 +15,10 @@ dependencies = [
     "torch",
     "torchvision",
     "tqdm",
+    "langchain",
+    "langchain_community",
+    "langchain_google_genai",
+    "geocoder"
 ]
 
 [dependency-groups]
@@ -33,4 +37,5 @@ packages = ["src"]
 load-data='src.scripts.load_data:main'
 model-shootout='src.scripts.model_shootout:main'
 sequential-fine-tuning='src.scripts.sequential_fine_tuning:main'
+platemate='src.scripts.platemate_agent:main'
 # Add your scripts here
