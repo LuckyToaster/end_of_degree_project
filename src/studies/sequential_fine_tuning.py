@@ -108,12 +108,13 @@ def objective(trial):
 
 
 def main():
-
-    db_path = Path(__file__).resolve().parents[2] / 'data/studies/sequential_fine_tuning.db'
-    db_path.parent.mkdir(parents=True, exist_ok=True)
+    # db_path = Path(__file__).resolve().parents[2] / 'data/studies/sequential_fine_tuning.db'
+    path = '/data/studies'
+    .parent.mkdir(parents=True, exist_ok=True)
     study = optuna.create_study(
         study_name='sequential_fine_tuning', 
-        storage=f'sqlite:///{db_path}', 
+        storage='data/studies/sequential_fine_tuning.db',
+        # storage=f'sqlite:///{db_path}', 
         direction='minimize',
         load_if_exists=True,
         pruner=optuna.pruners.HyperbandPruner()
