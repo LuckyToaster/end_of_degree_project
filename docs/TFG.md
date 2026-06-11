@@ -6,8 +6,13 @@ date: \today
 bibliography: refs.bib
 csl: ieee.csl
 link-citations: true
-mainfont: "TeX Gyre Pagella"
-sansfont: "TeX Gyre Heros"
+linestretch: 1.5
+mainfont: "Libertinus Serif"
+sansfont: "Libertinus Serif"
+monofont: "Libertinus Mono"
+mathfont: "Libertinus Math"
+header-includes:
+  - \setkomafont{disposition}{\bfseries}
 geometry:
   - top=2cm
   - bottom=2cm
@@ -74,8 +79,12 @@ for 12 different datasets. They found that:
 With this information, it was decided to use transfer learning when training the model, because even if the MMFood100K dataset is too large or too 
 different from ImageNet, it will converge faster saving a of training time.
 
+**REDACT**
 Sadly, @do_imagenet_models_transfer_better did not consider regression or predictions of continuous numerical values, 
 and not much information was found on this topic besides some casual internet articles.
+
+**REVISE**
+How well Imagenet trained classification CNNs transfer to other tasks other than classification was not studied by [6]
 
 
 ## Model Architecture Evaluation
@@ -100,7 +109,7 @@ After runnign the _"model shootout"_ optuna study for four times, it was determi
 
 The Swin came on top being the fastest learner, which makes sense since all the others are CNNs and Swin is a more modern Vision Transformer.
 
-The variant of each model was chosen as the biggest variant that could fit on a _16GB VRAM RTX 3060 ti_ GPU. 
+The variant of each model was chosen as the biggest variant that could fit on a _16GB VRAM RTX 5060 ti_ GPU. 
 
 ## Sequential fine tuning with Hyperparameter Optimization
 
@@ -133,12 +142,21 @@ while using prompting techniques like Chain of Thought, Scale Hint in the image,
 the error in the predictions would shrink significantly. However, @lmms_and_acedata reported MAE too big to make 
 an accurate food logging system out of it.
 
+**REDACT**
+
 A system was devised, that consisted of:
+
+**TO**
+
+The LMM system for estimating nutritional information in @lmms_and_acedata was replicated (more details in Figure 1)
+
+**REMOVE**
+
 - A pretrained food classifier
 - A coordinate fetching function
 - A timestamp function
 
-![LMM enriched with metadata](lmm.png)
+![LMM enriched with metadata](lmm.png){width=70%}
 
 # Results
 

@@ -1,0 +1,15 @@
+graph TD
+    img[Image Input]
+    vqa[Ingredient VQA LMM]
+    geo[Coordinates]
+    time[Timestamp]
+    prompt["LMM Prompt <br><small>Identified Ingredients: {ingredients}<br>Local Date and Time: {datetime}<br>Location / Coordinates: {coordinates}<br>Estimate the macros and calories for the food in the image.</small>"]
+    lmm[LMM]
+    out["<small>{fat_g, prot_g, carb_g}</small>"]
+    geo --> prompt
+    time --> prompt
+    img --> vqa
+    vqa --> prompt
+    prompt --> lmm
+    img --> lmm
+    lmm --> out

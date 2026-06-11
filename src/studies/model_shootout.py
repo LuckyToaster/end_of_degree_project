@@ -10,8 +10,8 @@ from src.helpers.models import get_EfficientNet_B3, get_EfficientNet_V2_S, get_M
 INPUT = 'img_path'
 TARGETS = ['fat_g', 'carb_g', 'prot_g']
 SEED = 1
-LR = 1e-3
-EPOCHS = 10
+LR = 1e-4
+EPOCHS = 20
 BS = 32
 MODEL_CONFIGS = {
     'EfficientNet_B3': get_EfficientNet_B3, 
@@ -25,13 +25,15 @@ device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 df = pd.read_csv('data/food_dataset.csv')
 
 train_df, test_df = train_test_split(df, test_size=0.2, random_state=SEED)
-train_df.loc[:, TARGETS], test_df.loc[:, TARGETS] = standardize(train_df[TARGETS], test_df[TARGETS])
+train_scaled, test_scaled = standardize(train_df[TARGETS], test_df[TARGETS])
+train_df[TARGETS] = train_scaled
+test_df[TARGETS] = test_scaled
 val_df, hidden_df = train_test_split(test_df, test_size=0.5, random_state=SEED)
 
 
 def objective(trial):
     model_name = trial.suggest_categorical('MODEL', list(MODEL_CONFIGS.keys()))
-    model, transforms = MODEL_CONFIGS[model_name](feature_extraction=True, verbose=False)
+    model, transforms = MODEL_CONFIGS[model_name](feature_extraction=False, verbose=False)
     
     model = model.to(device)
     lr = lr_linear_scaling(LR, 32, BS)
@@ -39,7 +41,7 @@ def objective(trial):
     train_ds = FoodDataset(train_df, transform=transforms, input=INPUT, targets=TARGETS)
     val_ds = FoodDataset(val_df, transform=transforms, input=INPUT, targets=TARGETS)
     train_loader = DataLoader(train_ds, batch_size=BS, shuffle=True, num_workers=8, pin_memory=True, persistent_workers=True)
-    val_loader = DataLoader(val_ds, batch_size=BS, shuffle=True, num_workers=8, pin_memory=True, persistent_workers=True)
+    val_loader = DataLoader(val_ds, batch_size=BS, shuffle=False, num_workers=8, pin_memory=True, persistent_workers=True)
 
     losses = train_eval_loop(
         model = model,
