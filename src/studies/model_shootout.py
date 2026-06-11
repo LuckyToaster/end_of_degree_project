@@ -1,5 +1,6 @@
 import torch, optuna
 import pandas as pd
+from pathlib import Path
 from torch.utils.data import DataLoader
 from sklearn.model_selection import train_test_split
 from src.dataset import FoodDataset
@@ -23,8 +24,9 @@ torch.cuda.empty_cache() if torch.cuda.is_available() else print('NO CUDA 🙉')
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 df = pd.read_csv('data/food_dataset.csv')
 
-train_df, test_df = train_test_split(df, test_size=0.1, random_state=SEED)
+train_df, test_df = train_test_split(df, test_size=0.2, random_state=SEED)
 train_df.loc[:, TARGETS], test_df.loc[:, TARGETS] = standardize(train_df[TARGETS], test_df[TARGETS])
+val_df, hidden_df = train_test_split(test_df, test_size=0.5, random_state=SEED)
 
 
 def objective(trial):
@@ -35,15 +37,15 @@ def objective(trial):
     lr = lr_linear_scaling(LR, 32, BS)
 
     train_ds = FoodDataset(train_df, transform=transforms, input=INPUT, targets=TARGETS)
-    test_ds = FoodDataset(test_df, transform=transforms, input=INPUT, targets=TARGETS)
+    val_ds = FoodDataset(val_df, transform=transforms, input=INPUT, targets=TARGETS)
     train_loader = DataLoader(train_ds, batch_size=BS, shuffle=True, num_workers=8, pin_memory=True, persistent_workers=True)
-    test_loader = DataLoader(test_ds, batch_size=BS, shuffle=True, num_workers=8, pin_memory=True, persistent_workers=True)
+    val_loader = DataLoader(val_ds, batch_size=BS, shuffle=True, num_workers=8, pin_memory=True, persistent_workers=True)
 
     losses = train_eval_loop(
         model = model,
         epochs = EPOCHS,
         train_loader = train_loader,
-        test_loader = test_loader,
+        test_loader = val_loader,
         criterion = torch.nn.L1Loss(), # MAE
         optimizer = torch.optim.AdamW(model.parameters(), lr=lr, weight_decay=0.01),
         device = device,
@@ -55,10 +57,12 @@ def objective(trial):
 
 
 def main():
+    path = 'data/studies'
+    Path(path).mkdir(exist_ok=True, parents=True)
     search_space = { 'MODEL': list(MODEL_CONFIGS.keys()) }
     study = optuna.create_study(
         study_name='model_shootout', 
-        storage='sqlite:///data/studies/model_shootout.db', 
+        storage=f'sqlite:///{path}/model_shootout.db', 
         sampler=optuna.samplers.GridSampler(search_space),
         direction='minimize',
         load_if_exists=True

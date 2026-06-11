@@ -20,8 +20,9 @@ SEED = 1
 BS = 128
 
 df = pd.read_csv('data/food_dataset.csv')
-train_df, test_df = train_test_split(df, test_size=0.1, random_state=SEED)
+train_df, test_df = train_test_split(df, test_size=0.2, random_state=SEED)
 train_df[TARGETS], test_df[TARGETS] = standardize(train_df[TARGETS], test_df[TARGETS])
+val_df, hidden_df = train_test_split(test_df, test_size=0.5, random_state=SEED)
 
 
 def get_swin_v2_s_pretrained():
@@ -54,9 +55,9 @@ def objective(trial):
     model = model.to(device)
 
     train_ds = FoodDataset(train_df, transform=transforms, input=INPUT, targets=TARGETS)
-    test_ds = FoodDataset(test_df, transform=transforms, input=INPUT, targets=TARGETS)
+    val_ds = FoodDataset(val_df, transform=transforms, input=INPUT, targets=TARGETS)
     train_loader = DataLoader(train_ds, batch_size=BS, shuffle=True, num_workers=8, pin_memory=True, persistent_workers=True)
-    test_loader = DataLoader(test_ds, batch_size=BS, shuffle=True, num_workers=8, pin_memory=True, persistent_workers=True)
+    val_loader = DataLoader(val_ds, batch_size=BS, shuffle=True, num_workers=8, pin_memory=True, persistent_workers=True)
 
     try:
         criterions = { 'L1': L1Loss(), 'MSE': MSELoss(), 'Huber': HuberLoss() }
@@ -65,7 +66,7 @@ def objective(trial):
             model = model,
             epochs = FE_EPOCHS,
             train_loader = train_loader,
-            test_loader = test_loader,
+            test_loader = val_loader,
             criterion = criterions[LOSS],
             device = device,
             trial = trial,
@@ -79,7 +80,7 @@ def objective(trial):
             model = model,
             epochs = FT_EPOCHS,
             train_loader = train_loader,
-            test_loader = test_loader,
+            test_loader = val_loader,
             criterion = criterions[LOSS],
             device = device,
             trial = trial,
@@ -101,20 +102,20 @@ def objective(trial):
         if 'model' in locals(): del model
         if 'train_ds' in locals(): del train_ds
         if 'test_ds' in locals(): del test_ds
+        if 'val_ds' in locals(): del val_ds
         if 'train_loader' in locals(): del train_loader
         if 'test_loader' in locals(): del test_loader
+        if 'val_loader' in locals(): del val_loader
         gc.collect()
         torch.cuda.empty_cache()
 
 
 def main():
-    # db_path = Path(__file__).resolve().parents[2] / 'data/studies/sequential_fine_tuning.db'
-    path = '/data/studies'
-    .parent.mkdir(parents=True, exist_ok=True)
+    path = 'data/studies'
+    Path(path).mkdir(exist_ok=True, parents=True)
     study = optuna.create_study(
         study_name='sequential_fine_tuning', 
-        storage='data/studies/sequential_fine_tuning.db',
-        # storage=f'sqlite:///{db_path}', 
+        storage=f'sqlite:///{path}/sequential_fine_tuning.db',
         direction='minimize',
         load_if_exists=True,
         pruner=optuna.pruners.HyperbandPruner()

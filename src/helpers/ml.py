@@ -26,6 +26,12 @@ def train_eval_loop(model, epochs, train_loader, test_loader, criterion, optimiz
         if trial is not None:
             # Report the last value (average loss)
             trial.report(val_losses[-1], actual_epoch)
+
+            # Save the full loss trajectory per epoch
+            prev_train = trial.user_attrs.get("train_losses", [])
+            prev_val = trial.user_attrs.get("val_losses", [])
+            trial.set_user_attr("train_losses", prev_train + [train_losses])
+            trial.set_user_attr("val_losses", prev_val + [val_losses])
             
             if trial.should_prune():
                 import optuna

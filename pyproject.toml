@@ -18,7 +18,10 @@ dependencies = [
     "langchain",
     "langchain_community",
     "langchain_google_genai",
-    "geocoder"
+    "geocoder",
+    "kaleido>=1.3.0",
+    "plotly>=6.8.0",
+    "jupyter>=1.1.1",
 ]
 
 [dependency-groups]
@@ -35,7 +38,7 @@ packages = ["src"]
 
 [project.scripts]
 load-data='src.scripts.load_data:main'
-model-shootout='src.scripts.model_shootout:main'
-sequential-fine-tuning='src.scripts.sequential_fine_tuning:main'
+model-shootout='src.studies.model_shootout:main'
+sequential-fine-tuning='src.studies.sequential_fine_tuning:main'
 platemate='src.scripts.platemate_agent:main'
-# Add your scripts here
+plot-losses='src.scripts.plot_losses:main'
