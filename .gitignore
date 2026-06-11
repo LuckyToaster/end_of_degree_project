@@ -1,7 +1,11 @@
-data
+data/models
+data/imgs
+data/food_dataset.csv
+
 __pycache__
 **/__pycache__
 .pytest_cache
+
 .venv
 uv.lock
 
