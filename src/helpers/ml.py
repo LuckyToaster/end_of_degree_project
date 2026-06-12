@@ -1,4 +1,4 @@
-from tqdm.asyncio import tqdm
+from tqdm.auto import tqdm
 from sklearn.preprocessing import StandardScaler
 from sklearn.model_selection import train_test_split
 from optuna import TrialPruned
@@ -7,7 +7,7 @@ import pandas as pd
 from pandas import DataFrame
 
 
-def three_way_split(csv_path: str, targets: list[str], seed: int) -> (DataFrame, DataFrame, DataFrame):
+def three_way_split(csv_path: str, targets: list[str], seed: int) -> tuple[DataFrame, DataFrame, DataFrame]:
     df = pd.read_csv(csv_path)
     train_df, test_df = train_test_split(df, test_size=0.2, random_state=seed)
     train_df[targets], test_df[targets] = standardize(train_df[targets], test_df[targets])
@@ -98,5 +98,3 @@ def validate(loader, model, criterion, device):
     avg_losses = [l / len(loader) for l in running_losses]
     avg_losses.append(avg_loss)
     return avg_losses 
-
-

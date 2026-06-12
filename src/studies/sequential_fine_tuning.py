@@ -5,7 +5,7 @@ from torch import nn
 from torch.nn import HuberLoss, L1Loss, MSELoss
 
 from src.dataset import FoodDataset
-from src.constants import STUDIES_PATH, CSV_PATH
+from src.constants import STUDIES_DIR, CSV_PATH
 from src.helpers.models import unfreeze, get_Swin_V2_S
 from src.helpers.ml import train_eval_loop, three_way_split
 
@@ -74,10 +74,10 @@ def objective(trial):
 
 
 def main():
-    Path(STUDIES_PATH).mkdir(exist_ok=True, parents=True)
+    Path(STUDIES_DIR).mkdir(exist_ok=True, parents=True)
     study = optuna.create_study(
         study_name='sequential_fine_tuning', 
-        storage=f'sqlite:///{STUDIES_PATH}/sequential_fine_tuning.db',
+        storage=f'sqlite:///{STUDIES_DIR}/sequential_fine_tuning.db',
         direction='minimize',
         load_if_exists=True,
         pruner=optuna.pruners.HyperbandPruner()

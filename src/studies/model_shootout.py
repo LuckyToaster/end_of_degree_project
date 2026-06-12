@@ -6,7 +6,7 @@ from torch.utils.data import DataLoader
 from torch.nn import L1Loss
 from torch.optim import AdamW
 
-from src.constants import STUDIES_PATH, CSV_PATH
+from src.constants import STUDIES_DIR, CSV_PATH
 from src.dataset import FoodDataset
 from src.helpers.ml import train_eval_loop, three_way_split
 from src.helpers.models import get_EfficientNet_B3, get_EfficientNet_V2_S, get_MobileNet_V3_L, get_Swin_V2_S
@@ -47,12 +47,12 @@ def objective(trial, model_name):
 
 
 def main():
-    Path(STUDIES_PATH).mkdir(exist_ok=True, parents=True)
+    Path(STUDIES_DIR).mkdir(exist_ok=True, parents=True)
     
     for model_name in MODEL_CONFIGS.keys():
         study = optuna.create_study(
             study_name=f'shootout_{model_name}', 
-            storage=f'sqlite:///{STUDIES_PATH}/model_shootout.db', 
+            storage=f'sqlite:///{STUDIES_DIR}/model_shootout.db', 
             sampler=optuna.samplers.TPESampler(seed=SEED),
             direction='minimize',
             load_if_exists=True

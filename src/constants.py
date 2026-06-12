@@ -1,2 +1,3 @@
 CSV_PATH = 'data/food_dataset.csv'
-STUDIES_PATH = 'data/studies'
+STUDIES_DIR = 'data/studies'
+PLOTS_DIR = 'data/plots'
