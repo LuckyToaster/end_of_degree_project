@@ -63,12 +63,11 @@ def get_MobileNet_V3_L(feature_extraction=False, verbose=True):
     return model, preprocess
 
 
-def get_Swin_V2_S(feature_extraction=False, verbose=True):
+def get_Swin_V2_S(feature_extraction=False, verbose=True, modify_head=True):
     weights = Swin_V2_S_Weights.DEFAULT
     preprocess = weights.transforms()
     model = swin_v2_s(weights=weights)
     if feature_extraction: freeze(model)
-    # modify the head
-    model.head = Linear(model.head.in_features, 3)
+    if modify_head: model.head = Linear(model.head.in_features, 3)
     if verbose: print(f'Swin V2 Small: {preprocess}')
     return model, preprocess

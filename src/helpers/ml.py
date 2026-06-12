@@ -1,41 +1,43 @@
 from tqdm.asyncio import tqdm
 from sklearn.preprocessing import StandardScaler
-from torch.nn.utils import clip_grad_norm_
+from sklearn.model_selection import train_test_split
+from optuna import TrialPruned
 import torch
-
-__all__ = ['train_eval_loop', 'validate', 'standardize', 'lr_linear_scaling']
-
-
-lr_linear_scaling = lambda lr, old_bs, new_bs: lr * (new_bs / old_bs)
+import pandas as pd
+from pandas import DataFrame
 
 
-def train_eval_loop(model, epochs, train_loader, test_loader, criterion, optimizer, device, trial=None, starting_epoch=0):
+def three_way_split(csv_path: str, targets: list[str], seed: int) -> (DataFrame, DataFrame, DataFrame):
+    df = pd.read_csv(csv_path)
+    train_df, test_df = train_test_split(df, test_size=0.2, random_state=seed)
+    train_df[targets], test_df[targets] = standardize(train_df[targets], test_df[targets])
+    val_df, hidden_df = train_test_split(test_df, test_size=0.5, random_state=seed)
+    return train_df, val_df, hidden_df
+
+
+def standardize(train_df, test_df):
+    scaler = StandardScaler()
+    scaler.set_output(transform="pandas")
+    return scaler.fit_transform(train_df), scaler.transform(test_df)
+
+
+def train_eval_loop(model, epochs, train_loader, val_loader, criterion, optimizer, device, trial=None, starting_epoch=0):
     losses = {'train': [], 'val': []}
     for epoch in range(epochs): 
         actual_epoch = starting_epoch + epoch
         train_losses = train_epoch(model, train_loader, criterion, optimizer, device, actual_epoch)
-        val_losses = validate(test_loader, model, criterion, device)
+        val_losses = validate(val_loader, model, criterion, device)
 
         losses['train'].append(train_losses)
         losses['val'].append(val_losses) 
 
-        res_train = [round(l, 4) for l  in losses['train'][-1]]
-        res_val = [round(l, 4) for l in losses['val'][-1]]
-        print(f'Epoch {actual_epoch+1} Complete - Train Losses {res_train}, Val Losses: {res_val}')
+        print(f'Epoch {actual_epoch+1} Complete - Train Losses {[round(l, 4) for l  in losses['train'][-1]]}, Val Losses: {[round(l, 4) for l in losses['val'][-1]]}')
 
         if trial is not None:
-            # Report the last value (average loss)
             trial.report(val_losses[-1], actual_epoch)
-
-            # Save the full loss trajectory per epoch
-            prev_train = trial.user_attrs.get("train_losses", [])
-            prev_val = trial.user_attrs.get("val_losses", [])
-            trial.set_user_attr("train_losses", prev_train + [train_losses])
-            trial.set_user_attr("val_losses", prev_val + [val_losses])
-            
-            if trial.should_prune():
-                import optuna
-                raise optuna.TrialPruned()
+            trial.set_user_attr("train_losses", trial.user_attrs.get("train_losses", []) + [train_losses])
+            trial.set_user_attr("val_losses", trial.user_attrs.get("val_losses", []) + [val_losses])
+            if trial.should_prune(): raise TrialPruned()
 
     return losses
 
@@ -98,7 +100,3 @@ def validate(loader, model, criterion, device):
     return avg_losses 
 
 
-def standardize(train_df, test_df):
-    scaler = StandardScaler()
-    scaler.set_output(transform="pandas")
-    return scaler.fit_transform(train_df), scaler.transform(test_df)

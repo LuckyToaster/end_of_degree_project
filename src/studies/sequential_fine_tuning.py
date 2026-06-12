@@ -1,15 +1,13 @@
-import torch, optuna
 from pathlib import Path
-import pandas as pd
+import torch, optuna, gc
 from torch.utils.data import DataLoader
 from torch import nn
 from torch.nn import HuberLoss, L1Loss, MSELoss
-from sklearn.model_selection import train_test_split
-from torchvision.models import swin_v2_s, Swin_V2_S_Weights
+
 from src.dataset import FoodDataset
-from src.helpers.models import freeze, unfreeze
-from src.helpers.ml import standardize, train_eval_loop
-import gc
+from src.constants import STUDIES_PATH, CSV_PATH
+from src.helpers.models import unfreeze, get_Swin_V2_S
+from src.helpers.ml import train_eval_loop, three_way_split
 
 torch.cuda.empty_cache() if torch.cuda.is_available() else print('NO CUDA 🙉')
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
@@ -19,28 +17,7 @@ TARGETS = ['fat_g', 'carb_g', 'prot_g']
 SEED = 1
 BS = 128
 
-df = pd.read_csv('data/food_dataset.csv')
-
-train_df, temp_df = train_test_split(df, test_size=0.2, random_state=SEED)
-
-# Fix Pandas SettingWithCopyWarning by explicitly copying the splits
-train_df = train_df.copy()
-temp_df = temp_df.copy()
-
-# Standardize features using only training data statistics
-train_scaled, temp_scaled = standardize(train_df[TARGETS], temp_df[TARGETS])
-train_df.loc[:, TARGETS] = train_scaled
-temp_df.loc[:, TARGETS] = temp_scaled
-
-# Split the remaining 20% into 10% validation (for training) and 10% test (hidden)
-val_df, test_df = train_test_split(temp_df, test_size=0.5, random_state=SEED)
-
-
-def get_swin_v2_s_pretrained():
-    weights = Swin_V2_S_Weights.DEFAULT
-    transforms = weights.transforms()
-    model = swin_v2_s(weights=weights)
-    return model, transforms
+train_df, val_df, hidden_df = three_way_split(CSV_PATH, TARGETS, SEED)
 
 
 def objective(trial):
@@ -54,9 +31,7 @@ def objective(trial):
     FT_EPOCHS = trial.suggest_int('ft_epochs', 10, 50)
     LOSS = trial.suggest_categorical('loss', ['L1', 'MSE', 'Huber'])
 
-
-    model, transforms = get_swin_v2_s_pretrained()
-    freeze(model)
+    model, transforms = get_Swin_V2_S(feature_extraction=True, verbose=False, modify_head=False)
     model.head = nn.Sequential(
         nn.Linear(model.head.in_features, N_UNITS),
         nn.ReLU(),
@@ -72,61 +47,37 @@ def objective(trial):
 
     try:
         criterions = { 'L1': L1Loss(), 'MSE': MSELoss(), 'Huber': HuberLoss() }
+        fe_optimizer = torch.optim.AdamW(model.head.parameters(), lr=FE_LR, weight_decay=FE_WEIGHT_DECAY)
 
-        train_eval_loop(
-            model = model,
-            epochs = FE_EPOCHS,
-            train_loader = train_loader,
-            test_loader = val_loader,
-            criterion = criterions[LOSS],
-            device = device,
-            trial = trial,
-            starting_epoch = 0,
-            optimizer = torch.optim.AdamW(model.head.parameters(), lr=FE_LR, weight_decay=FE_WEIGHT_DECAY),
-        )
+        train_eval_loop(model,FE_EPOCHS, train_loader, val_loader, criterions[LOSS], fe_optimizer, device, trial)
+
+        # Clear feature extraction optimizer and gradients to free VRAM for fine-tuning
+        del fe_optimizer
+        model.zero_grad(set_to_none=True)
+        gc.collect()
+        torch.cuda.empty_cache()
 
         unfreeze(model)
+        ft_optimizer = torch.optim.AdamW([ {'params': model.features.parameters(), 'lr': FT_LR}, {'params': model.head.parameters(), 'lr': FE_LR} ], weight_decay=FT_WEIGHT_DECAY)
 
-        ft_results = train_eval_loop(
-            model = model,
-            epochs = FT_EPOCHS,
-            train_loader = train_loader,
-            test_loader = val_loader,
-            criterion = criterions[LOSS],
-            device = device,
-            trial = trial,
-            starting_epoch = FE_EPOCHS,
-            optimizer = torch.optim.AdamW(
-                [
-                    {'params': model.features.parameters(), 'lr': FT_LR}, 
-                    {'params': model.head.parameters(), 'lr': FE_LR}
-                ], 
-                weight_decay=FT_WEIGHT_DECAY
-            )
-        )
-
-        last_epoch_avg_loss = ft_results['val'][-1][-1]
-        return last_epoch_avg_loss
+        ft_losses = train_eval_loop(model, FT_EPOCHS, train_loader, val_loader, criterions[LOSS], ft_optimizer, device, trial, FE_EPOCHS)
+        return ft_losses['val'][-1][-1] # last epoch avg loss
 
     finally:
-        # clean shit up to avoid linux killing process due to OOM 
         if 'model' in locals(): del model
         if 'train_ds' in locals(): del train_ds
-        if 'test_ds' in locals(): del test_ds
         if 'val_ds' in locals(): del val_ds
         if 'train_loader' in locals(): del train_loader
-        if 'test_loader' in locals(): del test_loader
         if 'val_loader' in locals(): del val_loader
         gc.collect()
         torch.cuda.empty_cache()
 
 
 def main():
-    path = 'data/studies'
-    Path(path).mkdir(exist_ok=True, parents=True)
+    Path(STUDIES_PATH).mkdir(exist_ok=True, parents=True)
     study = optuna.create_study(
         study_name='sequential_fine_tuning', 
-        storage=f'sqlite:///{path}/sequential_fine_tuning.db',
+        storage=f'sqlite:///{STUDIES_PATH}/sequential_fine_tuning.db',
         direction='minimize',
         load_if_exists=True,
         pruner=optuna.pruners.HyperbandPruner()

@@ -5,6 +5,7 @@ data/food_dataset.csv
 __pycache__
 **/__pycache__
 .pytest_cache
+.ipynb_checkpoints
 
 .venv
 uv.lock
