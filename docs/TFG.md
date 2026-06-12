@@ -22,6 +22,10 @@ geometry:
 
 # Abstract
 
+# Brainstorm
+
+
+
 # Aim
 The goal of this work is to systematically explore ways in which to predict the macronutrient mass (in grams) from food images. 
 Macronutrient mass (grams of protein, fat and carbohydrate) were chosen as the three targets and they were used to calculate calories.
@@ -60,6 +64,8 @@ After that improvement, batches were fed to the model during training at approxi
 Finally, upon revisiting the code months later, it was evident that having alsmot two hundred gigabytes of images locally was not a good idea,
 so the data loading script was refactored and improved one final time so that images would be downloaded and resized in memory and then saved to disk. 
 This cut the dataset size into a fraction of what it was before and improved the speed of the script somewhat as it made less I/O operations.
+
+## Outlier removal
 
 # Multi-ouput Regression
 The computer vision task at hand requires multi output regression. 
@@ -162,6 +168,7 @@ The LMM system for estimating nutritional information in @lmms_and_acedata was r
 
 **[I currently have no results to showcase]**
 **[I will update the document with more sections, references and result visualizations]**
+
 
 
 

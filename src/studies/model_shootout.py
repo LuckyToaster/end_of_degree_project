@@ -11,7 +11,7 @@ INPUT = 'img_path'
 TARGETS = ['fat_g', 'carb_g', 'prot_g']
 SEED = 1
 LR = 1e-4
-EPOCHS = 20
+EPOCHS = 25
 BS = 32
 MODEL_CONFIGS = {
     'EfficientNet_B3': get_EfficientNet_B3, 
@@ -31,12 +31,12 @@ test_df[TARGETS] = test_scaled
 val_df, hidden_df = train_test_split(test_df, test_size=0.5, random_state=SEED)
 
 
-def objective(trial):
-    model_name = trial.suggest_categorical('MODEL', list(MODEL_CONFIGS.keys()))
+def objective(trial, model_name):
     model, transforms = MODEL_CONFIGS[model_name](feature_extraction=False, verbose=False)
     
     model = model.to(device)
-    lr = lr_linear_scaling(LR, 32, BS)
+    base_lr = trial.suggest_float('LR', 1e-5, 5e-4, log=True)
+    lr = lr_linear_scaling(base_lr, 32, BS)
 
     train_ds = FoodDataset(train_df, transform=transforms, input=INPUT, targets=TARGETS)
     val_ds = FoodDataset(val_df, transform=transforms, input=INPUT, targets=TARGETS)
@@ -61,12 +61,13 @@ def objective(trial):
 def main():
     path = 'data/studies'
     Path(path).mkdir(exist_ok=True, parents=True)
-    search_space = { 'MODEL': list(MODEL_CONFIGS.keys()) }
-    study = optuna.create_study(
-        study_name='model_shootout', 
-        storage=f'sqlite:///{path}/model_shootout.db', 
-        sampler=optuna.samplers.GridSampler(search_space),
-        direction='minimize',
-        load_if_exists=True
-    )
-    study.optimize(objective, n_trials=4)
+    
+    for model_name in MODEL_CONFIGS.keys():
+        study = optuna.create_study(
+            study_name=f'shootout_{model_name}', 
+            storage=f'sqlite:///{path}/model_shootout.db', 
+            sampler=optuna.samplers.TPESampler(seed=SEED),
+            direction='minimize',
+            load_if_exists=True
+        )
+        study.optimize(lambda trial: objective(trial, model_name), n_trials=5)

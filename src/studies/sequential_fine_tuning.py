@@ -20,9 +20,20 @@ SEED = 1
 BS = 128
 
 df = pd.read_csv('data/food_dataset.csv')
-train_df, test_df = train_test_split(df, test_size=0.2, random_state=SEED)
-train_df[TARGETS], test_df[TARGETS] = standardize(train_df[TARGETS], test_df[TARGETS])
-val_df, hidden_df = train_test_split(test_df, test_size=0.5, random_state=SEED)
+
+train_df, temp_df = train_test_split(df, test_size=0.2, random_state=SEED)
+
+# Fix Pandas SettingWithCopyWarning by explicitly copying the splits
+train_df = train_df.copy()
+temp_df = temp_df.copy()
+
+# Standardize features using only training data statistics
+train_scaled, temp_scaled = standardize(train_df[TARGETS], temp_df[TARGETS])
+train_df.loc[:, TARGETS] = train_scaled
+temp_df.loc[:, TARGETS] = temp_scaled
+
+# Split the remaining 20% into 10% validation (for training) and 10% test (hidden)
+val_df, test_df = train_test_split(temp_df, test_size=0.5, random_state=SEED)
 
 
 def get_swin_v2_s_pretrained():
@@ -120,4 +131,4 @@ def main():
         load_if_exists=True,
         pruner=optuna.pruners.HyperbandPruner()
     )
-    study.optimize(objective, n_trials=500)
+    study.optimize(objective, n_trials=60)
