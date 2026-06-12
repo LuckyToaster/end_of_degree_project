@@ -15,7 +15,7 @@ device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 INPUT = 'img_path'
 TARGETS = ['fat_g', 'carb_g', 'prot_g']
 SEED = 1
-BS = 128
+BS = 64
 
 train_df, val_df, hidden_df = three_way_split(CSV_PATH, TARGETS, SEED)
 
@@ -40,37 +40,45 @@ def objective(trial):
     )
     model = model.to(device)
 
+    # Load Data
     train_ds = FoodDataset(train_df, transform=transforms, input=INPUT, targets=TARGETS)
     val_ds = FoodDataset(val_df, transform=transforms, input=INPUT, targets=TARGETS)
-    train_loader = DataLoader(train_ds, batch_size=BS, shuffle=True, num_workers=8, pin_memory=True, persistent_workers=True)
-    val_loader = DataLoader(val_ds, batch_size=BS, shuffle=True, num_workers=8, pin_memory=True, persistent_workers=True)
 
-    try:
-        criterions = { 'L1': L1Loss(), 'MSE': MSELoss(), 'Huber': HuberLoss() }
-        fe_optimizer = torch.optim.AdamW(model.head.parameters(), lr=FE_LR, weight_decay=FE_WEIGHT_DECAY)
+    criterions = { 'L1': L1Loss(), 'MSE': MSELoss(), 'Huber': HuberLoss() }
+    
+    # Phase 1: Feature Extraction
+    train_loader = DataLoader(train_ds, batch_size=BS, shuffle=True, num_workers=4, pin_memory=True, persistent_workers=True)
+    val_loader = DataLoader(val_ds, batch_size=BS, shuffle=True, num_workers=4, pin_memory=True, persistent_workers=True)
+    fe_optimizer = torch.optim.AdamW(model.head.parameters(), lr=FE_LR, weight_decay=FE_WEIGHT_DECAY, fused=True)
 
-        train_eval_loop(model,FE_EPOCHS, train_loader, val_loader, criterions[LOSS], fe_optimizer, device, trial)
+    train_eval_loop(model, FE_EPOCHS, train_loader, val_loader, criterions[LOSS], fe_optimizer, device, trial)
+    
+    # Explicit cleanup to release workers and VRAM
+    del train_loader, val_loader, fe_optimizer
+    model.zero_grad(set_to_none=True)
+    gc.collect()
+    torch.cuda.empty_cache()
 
-        # Clear feature extraction optimizer and gradients to free VRAM for fine-tuning
-        del fe_optimizer
-        model.zero_grad(set_to_none=True)
-        gc.collect()
-        torch.cuda.empty_cache()
+    # Phase 2: Full Fine-tuning
+    unfreeze(model)
+    train_loader = DataLoader(train_ds, batch_size=BS, shuffle=True, num_workers=4, pin_memory=True, persistent_workers=True)
+    val_loader = DataLoader(val_ds, batch_size=BS, shuffle=True, num_workers=4, pin_memory=True, persistent_workers=True)
 
-        unfreeze(model)
-        ft_optimizer = torch.optim.AdamW([ {'params': model.features.parameters(), 'lr': FT_LR}, {'params': model.head.parameters(), 'lr': FE_LR} ], weight_decay=FT_WEIGHT_DECAY)
+    ft_optimizer = torch.optim.AdamW([ 
+        {'params': model.features.parameters(), 'lr': FT_LR}, 
+        {'params': model.head.parameters(), 'lr': FE_LR} 
+        ], weight_decay=FT_WEIGHT_DECAY, fused=True)
 
-        ft_losses = train_eval_loop(model, FT_EPOCHS, train_loader, val_loader, criterions[LOSS], ft_optimizer, device, trial, FE_EPOCHS)
-        return ft_losses['val'][-1][-1] # last epoch avg loss
+    ft_losses = train_eval_loop(model, FT_EPOCHS, train_loader, val_loader, criterions[LOSS], ft_optimizer, device, trial, FE_EPOCHS)
+    
+    # Cleanup after phase 2
+    del train_loader, val_loader, ft_optimizer
+    del model, train_ds, val_ds
+    gc.collect()
+    torch.cuda.empty_cache()
+    
+    return ft_losses['val'][-1][-1] # last epoch avg loss
 
-    finally:
-        if 'model' in locals(): del model
-        if 'train_ds' in locals(): del train_ds
-        if 'val_ds' in locals(): del val_ds
-        if 'train_loader' in locals(): del train_loader
-        if 'val_loader' in locals(): del val_loader
-        gc.collect()
-        torch.cuda.empty_cache()
 
 
 def main():

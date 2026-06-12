@@ -1,6 +1,7 @@
 data/models
 data/imgs
 data/food_dataset.csv
+imgs.tar.gz
 
 __pycache__
 **/__pycache__

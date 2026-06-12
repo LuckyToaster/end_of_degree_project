@@ -36,11 +36,14 @@ def plot_best_trial_losses(study_name, storage_path, dst_path):
 
 
 def main():
-    if len(sys.argv) > 1:
-        args = sys.argv[1].split('.')
-        Path(PLOTS_DIR).mkdir(exist_ok=True, parents=True)
-        plot_best_trial_losses(
-            study_name=args[0], 
-            storage_path=f'sqlite:///{STUDIES_DIR}/{args[1]}.db',
-            dst_path=f'{PLOTS_DIR}/{args[0]}.png'
-        )
+    if not len(sys.argv) > 1: 
+        print('no argument provided', file=sys.stderr)
+        exit(1)
+
+    args = sys.argv[1].split('.')
+    Path(PLOTS_DIR).mkdir(exist_ok=True, parents=True)
+    plot_best_trial_losses(
+        study_name=args[0], 
+        storage_path=f'sqlite:///{STUDIES_DIR}/{args[1]}.db',
+        dst_path=f'{PLOTS_DIR}/{args[0]}.png'
+    )

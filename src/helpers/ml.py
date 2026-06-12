@@ -23,9 +23,12 @@ def standardize(train_df, test_df):
 
 def train_eval_loop(model, epochs, train_loader, val_loader, criterion, optimizer, device, trial=None, starting_epoch=0):
     losses = {'train': [], 'val': []}
+    scaler = torch.amp.GradScaler('cuda')
+
     for epoch in range(epochs): 
         actual_epoch = starting_epoch + epoch
-        train_losses = train_epoch(model, train_loader, criterion, optimizer, device, actual_epoch)
+
+        train_losses = train_epoch(model, train_loader, criterion, optimizer, device, actual_epoch, scaler)
         val_losses = validate(val_loader, model, criterion, device)
 
         losses['train'].append(train_losses)
@@ -42,7 +45,7 @@ def train_eval_loop(model, epochs, train_loader, val_loader, criterion, optimize
     return losses
 
 
-def train_epoch(model, train_loader, criterion, optimizer, device, epoch_n):
+def train_epoch(model, train_loader, criterion, optimizer, device, epoch_n, scaler):
     model.train()
     running_loss = 0.0
     running_losses = [0.0, 0.0, 0.0]
@@ -52,9 +55,9 @@ def train_epoch(model, train_loader, criterion, optimizer, device, epoch_n):
         inputs = inputs.to(device, non_blocking=True)
         targets = targets.to(device, non_blocking=True).float()
 
-        optimizer.zero_grad()
-        outputs = model(inputs)
-        loss = criterion(outputs, targets.view_as(outputs)) # force targets to match the shape of predictions
+        with torch.autocast(device_type=str(device), dtype=torch.float16):
+            outputs = model(inputs)
+            loss = criterion(outputs, targets.view_as(outputs)) # force targets to match the shape of predictions
 
         # Calculate individual losses (no gradients needed for tracking)
         with torch.no_grad():
@@ -63,10 +66,11 @@ def train_epoch(model, train_loader, criterion, optimizer, device, epoch_n):
                 ind_loss = criterion(outputs[:, i], targets[:, i])
                 running_losses[i] += ind_loss.item()
 
-        loss.backward()
-        # Added this to prevent exploding gradients in regression
-        # clip_grad_norm_(model.parameters(), max_norm=1.0) 
-        optimizer.step()
+        scaler.scale(loss).backward()
+        scaler.step(optimizer)
+        scaler.update()
+        optimizer.zero_grad(set_to_none=True) # set_to none can modestly improve performance
+
         running_loss += loss.item()
         loop.set_postfix(loss=loss.item())
 
