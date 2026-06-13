@@ -16,7 +16,7 @@ TARGETS = ['fat_g', 'carb_g', 'prot_g']
 SEED = 1
 LR = 1e-4
 EPOCHS = 25
-BS = 32
+BS = 64
 OPTIM_WEIGHT_DECAY=0.01
 MODEL_CONFIGS = {
     'EfficientNet_B3': get_EfficientNet_B3, 
