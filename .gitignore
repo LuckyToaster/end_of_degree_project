@@ -1,13 +1,8 @@
-data/models
-data/imgs
-data/food_dataset.csv
-imgs.tar.gz
-
 __pycache__
 **/__pycache__
 .pytest_cache
 .ipynb_checkpoints
 
+/data
 .venv
 uv.lock
-
