@@ -28,7 +28,7 @@ def objective(trial):
     FE_WEIGHT_DECAY = trial.suggest_float('fe_weight_decay', 1e-4, 1e-1, log=True)
     FT_WEIGHT_DECAY = trial.suggest_float('ft_weight_decay', 1e-4, 1e-1, log=True)
     FE_EPOCHS = trial.suggest_int('fe_epochs', 5, 20)
-    FT_EPOCHS = trial.suggest_int('ft_epochs', 10, 50)
+    FT_EPOCHS = trial.suggest_int('ft_epochs', 10, 80)
     LOSS = trial.suggest_categorical('loss', ['L1', 'MSE', 'Huber'])
 
     model, transforms = get_Swin_V2_S(feature_extraction=True, verbose=False, modify_head=False)

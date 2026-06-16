@@ -24,8 +24,6 @@ geometry:
 
 # Brainstorm
 
-
-
 # Aim
 The goal of this work is to systematically explore ways in which to predict the macronutrient mass (in grams) from food images. 
 Macronutrient mass (grams of protein, fat and carbohydrate) were chosen as the three targets and they were used to calculate calories.
@@ -36,6 +34,32 @@ Achieving SOTA or close to SOTA quality presented a significant challenge. In or
 the project adopted an experimental and research driven approach, 
 using the literature to justify decisions and hypotheses, and testing those hypotheses through experimentation,
 thus adhering to the scientific method
+
+# Introduction
+
+The biggest challenge when it comes to using computer vision models to predict nutritional information from food images is that it is difficult to predict mass or volume from food images,
+using a reference object in images may help models better learn this feature @food_portion_size_estimation. @food_portion_size_estimation reported low error in predicting volume from food images,
+although useful in demonstrating how to create a nutrition dataset (one containing reference objects like coins), did not disclose how they obtained such results and simply called it 
+'a computer algorithm'. Since no dataset containing images with reference objects annotated with nutritional information was found from an early stage, the present work shifted to make a general purpose solution that would hopefully
+predict low enough errors that would beat human estimations.
+
+- Research on Nutritional information extraction from food images found was mainly focused on food classification tasks.
+
+It may be possible to make better predictions by using two models, one that predicts macronutrient proportions in an image and another that is solely focused on predictng the mass of the food in the image.
+
+
+The researched on model architectures for this work was limited to an area of research involved in small and efficient architectures. @squeezenet studied how different filter dimensions affected network accuracy and 
+efficiency among other things, they introduced _SqueezeNet_, a CNN with AlexNet level accuracy and 50x fewer parameters. They showcase three strategies to decrease the number of parameters in a network while preserving the most accuracy. 
+The strategis showcased in @squeezenet are: First, replacing 3x3 filters with pointwise convolutions _"since a 1x1 filter has 9X fewer parameters than a 3x3 filter"_. Second, in order to shrink the parameter count further, decrease the number
+of input channels or features that lead to 3x3 filters, as they highlight that the number of parameters in a layer are (number of input channels) * (number of filters) * (filter dimensions, eg: 3x3). Thirdly, downsampling late in the network as opposed 
+to early, so that the final activation maps don't loose too much resolution and information is not lost, which according to @squeezenet is done mainly to preserve accuracy.
+
+The parameter shrinking strategies showcased by @squeezenet led them to come up with the _Fire module_, of which SqueezeNet is mostly comprised of. A Fire module is made up of a _squeeze_ phase that uses 1x1 filters to shrink the depth of the output tensor depending on the number of 1x1 filters, 
+and an _expand_ phase featuring 1x1 and 3x3 filters. So their fire module has three hyperparameters, the number of 1x1 filters in the squeeze, the number of 1x1 filters in the expand and the number of 3x3 filters in the expand phase. They note 
+that in order to align with their second strategy, they keep the number of filters in the squeeze phase to be less than the sum of all the filters in the expand phase.
+
+Later, @senetworks introduced the _Squeeze and Excitation_ (SE) block as a way to perform feature (channel) recalibration _"to selectively emphasise informative features and suppress less useful ones"_ @senetworks.
+
 
 # The Data
 
@@ -61,11 +85,10 @@ Later during training, a bottleneck was found, it was caused by the heavy image 
 The data loading script was modified to offload the image resizing computation to that data loading stage. 
 After that improvement, batches were fed to the model during training at approximately twice the speed.
 
-Finally, upon revisiting the code months later, it was evident that having alsmot two hundred gigabytes of images locally was not a good idea,
+Finally, upon revisiting the code months later, it was evident that having almost two hundred gigabytes of images locally was not a good idea,
 so the data loading script was refactored and improved one final time so that images would be downloaded and resized in memory and then saved to disk. 
 This cut the dataset size into a fraction of what it was before and improved the speed of the script somewhat as it made less I/O operations.
 
-## Outlier removal
 
 # Multi-ouput Regression
 The computer vision task at hand requires multi output regression. 
@@ -91,6 +114,8 @@ and not much information was found on this topic besides some casual internet ar
 
 **REVISE**
 How well Imagenet trained classification CNNs transfer to other tasks other than classification was not studied by [6]
+
+
 
 
 ## Model Architecture Evaluation

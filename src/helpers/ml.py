@@ -21,9 +21,13 @@ def standardize(train_df, test_df):
     return scaler.fit_transform(train_df), scaler.transform(test_df)
 
 
-def train_eval_loop(model, epochs, train_loader, val_loader, criterion, optimizer, device, trial=None, starting_epoch=0):
+def train_eval_loop(model, epochs, train_loader, val_loader, criterion, optimizer, device, trial=None, starting_epoch=0, save_dir=None, model_name="model"):
     losses = {'train': [], 'val': []}
     scaler = torch.amp.GradScaler('cuda')
+    
+    if save_dir is not None:
+        import os
+        os.makedirs(save_dir, exist_ok=True)
 
     for epoch in range(epochs): 
         actual_epoch = starting_epoch + epoch
@@ -34,7 +38,12 @@ def train_eval_loop(model, epochs, train_loader, val_loader, criterion, optimize
         losses['train'].append(train_losses)
         losses['val'].append(val_losses) 
 
-        print(f'Epoch {actual_epoch+1} Complete - Train Losses {[round(l, 4) for l  in losses['train'][-1]]}, Val Losses: {[round(l, 4) for l in losses['val'][-1]]}')
+        print(f'Epoch {actual_epoch+1} Complete - Train Losses {[round(l, 4) for l  in losses["train"][-1]]}, Val Losses: {[round(l, 4) for l in losses["val"][-1]]}')
+        
+        if save_dir is not None:
+            save_path = os.path.join(save_dir, f"{model_name}_epoch_{actual_epoch+1}.pt")
+            torch.save(model.state_dict(), save_path)
+            print(f"Model checkpoint saved to {save_path}")
 
         if trial is not None:
             trial.report(val_losses[-1], actual_epoch)

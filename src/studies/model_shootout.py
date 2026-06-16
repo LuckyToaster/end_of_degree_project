@@ -38,8 +38,8 @@ def objective(trial, model_name):
     model = model.to(device)
     train_ds = FoodDataset(train_df, transform=transforms, input=INPUT, targets=TARGETS)
     val_ds = FoodDataset(val_df, transform=transforms, input=INPUT, targets=TARGETS)
-    train_loader = DataLoader(train_ds, batch_size=BS, shuffle=True, num_workers=8, pin_memory=True, persistent_workers=True)
-    val_loader = DataLoader(val_ds, batch_size=BS, shuffle=False, num_workers=8, pin_memory=True, persistent_workers=True)
+    train_loader = DataLoader(train_ds, batch_size=BS, shuffle=True, num_workers=4, pin_memory=True, persistent_workers=True)
+    val_loader = DataLoader(val_ds, batch_size=BS, shuffle=False, num_workers=4, pin_memory=True, persistent_workers=True)
     optimizer = AdamW(model.parameters(), lr=lr, weight_decay=OPTIM_WEIGHT_DECAY, fused=True)
 
     losses = train_eval_loop(model, EPOCHS, train_loader, val_loader, L1Loss(), optimizer, device, trial)
