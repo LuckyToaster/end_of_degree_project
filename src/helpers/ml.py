@@ -21,6 +21,28 @@ def standardize(train_df, test_df):
     return scaler.fit_transform(train_df), scaler.transform(test_df)
 
 
+def get_scaler_on_train(csv_path: str, targets: list[str], seed: int) -> StandardScaler:
+    df = pd.read_csv(csv_path)
+    train_df, _ = train_test_split(df, test_size=0.2, random_state=seed)
+    scaler = StandardScaler()
+    scaler.set_output(transform="pandas")
+    scaler.fit(train_df[targets])
+    return scaler
+
+
+def get_predictions(loader, model, device):
+    model.eval()
+    all_preds = []
+    all_targets = []
+    with torch.no_grad():
+        for X, y in loader:
+            X = X.to(device)
+            pred = model(X)
+            all_preds.append(pred.cpu())
+            all_targets.append(y)
+    return torch.cat(all_preds), torch.cat(all_targets)
+
+
 def train_eval_loop(model, epochs, train_loader, val_loader, criterion, optimizer, device, trial=None, starting_epoch=0, save_dir=None, model_name="model"):
     losses = {'train': [], 'val': []}
     scaler = torch.amp.GradScaler('cuda')

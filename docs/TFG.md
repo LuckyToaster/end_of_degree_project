@@ -20,10 +20,6 @@ geometry:
   - right=2cm
 ---
 
-# Abstract
-
-# Brainstorm
-
 # Aim
 The goal of this work is to systematically explore ways in which to predict the macronutrient mass (in grams) from food images. 
 Macronutrient mass (grams of protein, fat and carbohydrate) were chosen as the three targets and they were used to calculate calories.
@@ -33,7 +29,9 @@ to allow for the use of the same dataset, and to make a general solution that is
 Achieving SOTA or close to SOTA quality presented a significant challenge. In order to accomplish this,
 the project adopted an experimental and research driven approach, 
 using the literature to justify decisions and hypotheses, and testing those hypotheses through experimentation,
-thus adhering to the scientific method
+thus adhering to the scientific method.
+
+The source code for this project can be found at [https://github.com/LuckyToaster/end_of_degree_projec](https://github.com/LuckyToaster/end_of_degree_project)
 
 # Introduction
 
@@ -164,24 +162,30 @@ And the following hidden flat layer that was inserted before the head
 - number of hidden units before the head (not a hyperparameter)
 - hidden layer dropout 
 
+![Fine Tuning Best trial](fine_tuning_best_trial.png)
+
+
+| Nutrient | MAE (grams) | MAE (kcal) |
+| :--- | :--- | :--- |
+| Fat | 4.22 | 37.98 |
+| Carbs | 9.68 | 38.72 |
+| Protein | 4.8 | 19.2 |
+| **Total** | - | **95.9** |
 
 # LMM enriched with metadata
 
-While researching the task at hand, @lmms_and_acedata found that when feeding an image of food enriched with metadata 
+@lmms_and_acedata found that when feeding an image of food enriched with metadata 
 like GPS coordinates, time of day and a list of ingredients to an LMM (Large Multimodal Model) at prompt time, 
 while using prompting techniques like Chain of Thought, Scale Hint in the image, Few-shot and Expert Persona, 
-the error in the predictions would shrink significantly. However, @lmms_and_acedata reported MAE too big to make 
-an accurate food logging system out of it.
+the error in the predictions would shrink significantly. However, @lmms_and_acedata reported MAE too hight to make 
+such a solution usable, 
 
 **REDACT**
 
-A system was devised, that consisted of:
 
 **TO**
 
 The LMM system for estimating nutritional information in @lmms_and_acedata was replicated (more details in Figure 1)
-
-**REMOVE**
 
 - A pretrained food classifier
 - A coordinate fetching function
@@ -189,12 +193,13 @@ The LMM system for estimating nutritional information in @lmms_and_acedata was r
 
 ![LMM enriched with metadata](lmm.png){width=70%}
 
-# Results
 
-**[I currently have no results to showcase]**
-**[I will update the document with more sections, references and result visualizations]**
-
-
+| Nutrient | MAE (grams) | MAE (kcal) |
+| :--- | :--- | :--- |
+| Fat | 12.47 | 121.23 |
+| Carbs | 18.77 | 75.08 |
+| Protein | 13.5 | 54 |
+| **Total** | - | **250.31** |
 
 
 # References
