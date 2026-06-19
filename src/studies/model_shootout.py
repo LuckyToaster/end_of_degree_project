@@ -14,7 +14,6 @@ from src.helpers.models import get_EfficientNet_B3, get_EfficientNet_V2_S, get_M
 INPUT = 'img_path'
 TARGETS = ['fat_g', 'carb_g', 'prot_g']
 SEED = 1
-LR = 1e-4
 EPOCHS = 25
 BS = 64
 OPTIM_WEIGHT_DECAY=0.01

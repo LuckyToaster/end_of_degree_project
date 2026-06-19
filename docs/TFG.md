@@ -13,26 +13,14 @@ monofont: "Libertinus Mono"
 mathfont: "Libertinus Math"
 header-includes:
   - \setkomafont{disposition}{\bfseries}
+  - \usepackage{float}
+  - \usepackage{graphicx}
 geometry:
   - top=2cm
   - bottom=2cm
   - left=2cm
   - right=2cm
 ---
-
-# BRAINSTORM
-
-The researched on model architectures for this work was limited to an area of research involved in small and efficient architectures. @squeezenet studied how different filter dimensions affected network accuracy and 
-efficiency among other things, they introduced _SqueezeNet_, a CNN with AlexNet level accuracy and 50x fewer parameters. They showcase three strategies to decrease the number of parameters in a network while preserving the most accuracy. 
-The strategis showcased in @squeezenet are: First, replacing 3x3 filters with pointwise convolutions _"since a 1x1 filter has 9X fewer parameters than a 3x3 filter"_. Second, in order to shrink the parameter count further, decrease the number
-of input channels or features that lead to 3x3 filters, as they highlight that the number of parameters in a layer are (number of input channels) * (number of filters) * (filter dimensions, eg: 3x3). Thirdly, downsampling late in the network as opposed 
-to early, so that the final activation maps don't loose too much resolution and information is not lost, which according to @squeezenet is done mainly to preserve accuracy.
-
-The parameter shrinking strategies showcased by @squeezenet led them to come up with the _Fire module_, of which SqueezeNet is mostly comprised of. A Fire module is made up of a _squeeze_ phase that uses 1x1 filters to shrink the depth of the output tensor depending on the number of 1x1 filters, 
-and an _expand_ phase featuring 1x1 and 3x3 filters. So their fire module has three hyperparameters, the number of 1x1 filters in the squeeze, the number of 1x1 filters in the expand and the number of 3x3 filters in the expand phase. They note 
-that in order to align with their second strategy, they keep the number of filters in the squeeze phase to be less than the sum of all the filters in the expand phase.
-
-Later, @senetworks introduced the _Squeeze and Excitation_ (SE) block as a way to perform feature (channel) recalibration _"to selectively emphasise informative features and suppress less useful ones"_ @senetworks.
 
 # Aim
 The goal of this work is to systematically explore ways in which to predict the macronutrient mass (in grams) from food images. 
@@ -45,7 +33,7 @@ the project adopted an experimental and research driven approach,
 using the literature to justify decisions and hypotheses, and testing those hypotheses through experimentation,
 thus adhering to the scientific method.
 
-The source code for this project can be found at [https://github.com/LuckyToaster/end_of_degree_projec](https://github.com/LuckyToaster/end_of_degree_project)
+The source code for this project can be found at [https://github.com/LuckyToaster/end_of_degree_project](https://github.com/LuckyToaster/end_of_degree_project)
 
 # Introduction
 
@@ -54,6 +42,20 @@ using a reference object in images may help models better learn this feature @fo
 although useful in demonstrating how to create a nutrition dataset (one containing reference objects like coins), did not disclose how they obtained such results and simply called it 
 'a computer algorithm'. Since no dataset containing images with reference objects annotated with nutritional information was found from an early stage, the present work shifted to make a general purpose solution that would hopefully
 predict low enough errors that would beat human estimations.
+
+The researched on model architectures for this work was limited to an area of research involved in small and efficient architectures. @squeezenet studied how different filter dimensions affected network accuracy and 
+efficiency among other things, they introduced _SqueezeNet_, a CNN with AlexNet level accuracy and 50x fewer parameters. They showcase three strategies to decrease the number of parameters in a network while preserving the most accuracy. 
+The strategis showcased in @squeezenet are: First, replacing 3x3 filters with pointwise convolutions _"since a 1x1 filter has 9X fewer parameters than a 3x3 filter"_. Second, in order to shrink the parameter count further, decrease the number
+of input channels or features that lead to 3x3 filters, as they highlight that the number of parameters in a layer are (number of input channels) * (number of filters) * (filter dimensions, eg: 3x3). Thirdly, downsampling late in the network as opposed 
+to early, so that the final activation maps don't loose too much resolution and information is not lost, which according to @squeezenet is done mainly to preserve accuracy.
+
+The parameter shrinking strategies showcased by @squeezenet led them to come up with the _Fire module_, of which SqueezeNet is mostly comprised of. A Fire module is made up of a _squeeze_ phase that uses 1x1 filters to shrink the depth of the output tensor depending on the number of 1x1 filters, 
+and an _expand_ phase featuring 1x1 and 3x3 filters. So their fire module has three hyperparameters, the number of 1x1 filters in the squeeze, the number of 1x1 filters in the expand and the number of 3x3 filters in the expand phase. They note 
+that in order to align with their second strategy, they keep the number of filters in the squeeze phase to be less than the sum of all the filters in the expand phase.
+
+Later, @senetworks introduced the _Squeeze and Excitation_ (SE) block as a way to perform feature (channel) recalibration _"to selectively emphasise informative features and suppress less useful ones"_ @senetworks. It used the findings of @squeezenet to make an
+improved module called the _"Squeeze and Excication block"_, which does feature recalibration by some sort of bypass or residual connection. Similar CNN architectures like @mobilenet, @mobilenetv3 and @efficientnet  were researched to gain a better knowledge of 
+the evolution of Deep Convolutional Neural Networks and a deeper intuition as to what elements constitute an powerful yet efficient architecture.
 
 # The Data
 
@@ -89,15 +91,24 @@ After loading the data, it was manually checked for coherence. 15 samples of the
 Many rows were also inspected to see the type of images present and the quality of the other annotations. Then, calorie and macronutrient histograms were plotted to see which targets hold more weight and if the distribution of 
 the data in the dataset is representative of real data, at least at a glance, which is useful when training a model. Below is a sample of the MM-Food-100K dataset, and the corresponding histograms.
 
-![Calorie and Macronutrient Histograms](food_distribution.png)
+\begin{figure}[H]
+\centering
+\includegraphics[width=1.0\textwidth]{dataset_sample.png}
+\caption{Dataset Sample}
+\end{figure}
 
-![Dataset Sample](dataset_sample.png)
+\begin{figure}[H]
+\centering
+\includegraphics[width=1.0\textwidth]{food_distribution.png}
+\caption{Calorie and Macronutrient Histograms}
+\end{figure}
 
 
 # Multi-ouput Regression
 The computer vision task at hand requires multi output regression. 
 A Neural Network can be adapted for regression by modifying the head of the network
-and changing the criterion from Cross-Entropy loss to MSE (L2) or MAE (L1) Loss.
+and changing the criterion from Cross-Entropy loss to MSE (L2) or MAE (L1) Loss, 
+_"Standard backbone networks are modified by replacing the final classification layer with a regression head"_ @from_pixels_to_cals.
 
 The literature on CNNs is very classification biased, as it is centered around benchmarking on ImageNet classification.
 After reading much literature on CNN architectures, the question of whether any ImageNet pretrained classification CNN would work well for our regression task emerged.
@@ -110,50 +121,50 @@ for 12 different datasets. They found that:
 - ImageNet pretraining accelerates convergence.
 
 With this information, it was decided to use transfer learning when training the model, because even if the MMFood100K dataset is too large or too 
-different from ImageNet, it will converge faster saving a of training time.
-
-**REDACT**
-Sadly, @do_imagenet_models_transfer_better did not consider regression or predictions of continuous numerical values, 
-and not much information was found on this topic besides some casual internet articles.
-
-**REVISE**
-How well Imagenet trained classification CNNs transfer to other tasks other than classification was not studied by [6]
-
-
-
+different from ImageNet, it will converge faster cutting down on training time.
 
 ## Model Architecture Evaluation
 Before using transfer leaning to train a model to do multi-output regression, it was decided to make some empirical experiment to predict which
 model architectore would perform better.
 
-To find which pretrained model architecture would transfer better with out dataset, or in other words, which would be the most suitable
-model for our data, a _"model shootout"_ study was devised. 
+To find which pretrained model architecture would transfer better, or in other words, which would be the most suitable
+model for our data and regression task, a _"model shootout"_ study was devised. 
 
 A study was made with the [Optuna](https://optuna.org/) library that would pick different pretrained models using grid sampling, train the models with the same hyperparameters, 
-for a fixed number of epochs using feature extraction (frozen backbone, training only the head).
+for a fixed number of epochs using feature extraction by freezing the backbone and training only the head.
 
 This was a cheap and fast way to make an educated guess to pick the model since _"when [different models are] used as fixed feature extractors ..., ImageNet top-1 accuracy was 
 correlated with accuracy on transfer learning"_ @do_imagenet_models_transfer_better .
 
-After runnign the _"model shootout"_ optuna study for four times, it was determined that out of the following models:
+However, after seeing the terrible results of said study, and how the models did not learn at all, the _"model shootout"_ experiment was updated to run a study for each model to test, 
+for a fixed number of trials, keeping all hyperparameters the same except the most critical, the learning rate. Since how well each architecture learns is mostly affected by 
+the learning rate, it was set as the only hyperparameter to be optimized by optuna, then the best trial for each architecture would be selected and the model architecture with the best learning curve would be picked.
+
+The experiment was ran to test the following models:
 
 - EfficientNet_B3
 - EfficientNet_V2_S
 - MobileNet_V3_L
 - Swin_V2_S
 
-The Swin came on top being the fastest learner, which makes sense since all the others are CNNs and Swin is a more modern Vision Transformer.
+The variant (eg: B3, S, L) of each model was chosen as the biggest variant that could fit on a _16GB VRAM RTX 5060 ti_ GPU. 
+After obtaining the results, the Swin vision transformer was chosen because its validation accuracy was slightly higher than the others and because it seemed like the most modern and promising architecture, besides that, 
+there was barely any difference between the learning curves except perhaps a little less overfitting from the Swin model. The results are shown in the figure below.
 
-The variant of each model was chosen as the biggest variant that could fit on a _16GB VRAM RTX 5060 ti_ GPU. 
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=1.0\textwidth]{model_shootout_grid.png}
+\caption{Model shootout results}
+\end{figure}
 
 ## Sequential fine tuning with Hyperparameter Optimization
 
 After the Swin model won the shootout, a two step training stage was ran in an extensive hyperparameter optimization study to find 
-the best settings for the model and minimize the loss.
+the best settings for the model and minimize the loss. The the two step training, or sequential fine tuning, consisted of a _warm up_ step before fine tuning, where the head learns while the backbone is frozen.
+The training loop in both studies featured Automated Mixed Precision Traninig, which was implemented after learning about it through @mixed_precision_training to attempt to train faster and with a lower memory foootprint, and was implemented following an official pytorch tutorial.
 
-The sequential fine tuning consisted of a _warm up_ step before fine tuning, where head learns while the backbone is frozen.
-
-The sequential fine tuning was ran in an extensive hyperparameter optimization study using the Optuna library, that optimized the following hyperparameters:
+The following parameters and hyperparemeters were optimized by the optuna study:
 
 - Feature extraction phase learning rate
 - Feature extraction weight decay
@@ -162,13 +173,19 @@ The sequential fine tuning was ran in an extensive hyperparameter optimization s
 - Fine tuning weight decay
 - Fine tuning epochs
 - Loss used (MAE, MSE or Huber) 
-
-And the following hidden flat layer that was inserted before the head
-
 - number of hidden units before the head (not a hyperparameter)
-- hidden layer dropout 
+- hidden layer dropout (not a hyperparameter)
 
-![Fine Tuning Best trial](fine_tuning_best_trial.png)
+On the figure below is the learning curve of the best trial
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=0.8\textwidth]{fine_tuning_best_trial.png}
+\caption{Fine Tuning Best trial}
+\end{figure}
+
+After the study, the model was trained using the best trial parameters and evaluated using a hidden validation split (a 3 way split was carried out throught the project in case the model was overfitted to the validation dataset).
+The results, are illustrated below. 
 
 
 | Nutrient | MAE (grams) | MAE (kcal) |
@@ -179,32 +196,40 @@ And the following hidden flat layer that was inserted before the head
 | **Total** | - | **95.9** |
 
 
+Overall, it was surprising to see s mean average error that low, which suggested that the model could be used as a real world calorie tracking system, albeit a not so precise one, in which a user could over or undereat around 300 calories a day, assuming logging three images 
+daily for breakfast, lunch and dinner. However, these results can beat the nutrion estimates of the average person.
+
 # LMM enriched with metadata
 
 @lmms_and_acedata found that when feeding an image of food enriched with metadata 
 like GPS coordinates, time of day and a list of ingredients to an LMM (Large Multimodal Model) at prompt time, 
 while using prompting techniques like Chain of Thought, Scale Hint in the image, Few-shot and Expert Persona, 
-the error in the predictions would shrink significantly. However, @lmms_and_acedata reported MAE too hight to make 
-such a solution usable.
+the error in the predictions would shrink significantly. However, their reported MAE was too high to make such a solution usable.
 
-The LMM pipeline for estimating nutritional information in @lmms_and_acedata was replicated nonetheless, 
-in order to compare the results with the fine tuned vision transformer (more details in Figure 1).
+Nonetheless, the LMM pipeline for estimating nutritional information in @lmms_and_acedata was replicated, 
+in order to compare the results with the fine tuned vision transformer. It's inner workings are illustrated in the figure below. 
 
-It consisted of the following components:
+\begin{figure}[H]
+\centering
+\includegraphics[width=0.6\textwidth]{lmm.png}
+\caption{LMM enriched with metadata}
+\end{figure}
+
+It was implemented through the use of the Langchain python module, and it consisted of the following components:
 
 - An ingredient VQA (Visual Question Answering) LMM
 - A coordinate fetching function
 - A timestamp function
 - A nutrition prediction LMM
 
-![LMM enriched with metadata](lmm.png){width=70%}
+The ingredient VQA LMM was simply an LMM that is given a food image and outputs a list of detected food items or ingredients. The list of ingredients, location coordinates and timestamp are fed to the nutrition prediction LMM
+at prompt time to make the final prediction. Google's gemini-3.1-flash-lite LMM was used for both models in the pipeline. Since the food images in the dataset are not annotated with timestamps or information that
+can be used to infer if the food was meant to be consumed as breakfast, lunch or dinner, the location and time information was not used to test the pipeline. 
+Also, testing the pipeline on the whole hidden validation split would haved incurred thousands of API calls, 
+which could have turned out too costly, so the evaluation of the pipeline was done with 100 samples of the hidden validation split. 
+The results obtained were practically equivalent to those reported in @lmms_and_acedata, and can be seen below.
 
-The ingredient VQA LMM was simply an LMM that is given a food images and outputs a list of detected food items or ingredients. The list of ingredients, location coordinates and timestamp are fed to the nutrition prediction LMM
-at prompt time to make the final prediction. The `gemini-3.1-flash-lite` LMM was used for both LMMs throught Google's API. Since the food images in the dataset are not annotated with timestamps or with timestamps or classifications that
-can be used to infer if the image is breakfast, lunch or dinner, the location and time information was not used to test the pipeline. Also, testing the pipeline on the hidden validation split would haved incurred thousands of API calls to gemini models, 
-which could turn out to be expensive, so the evaluation of the pipeline was done with 100 samples of the hidden validation split. The results obtained were practically equivalent to those reported in @lmms_and_acedata, and can be seen below.
 
-## LMM Pipeline Results
 | Nutrient | MAE (grams) | MAE (kcal) |
 | :--- | :--- | :--- |
 | Fat | 12.47 | 121.23 |
@@ -213,24 +238,20 @@ which could turn out to be expensive, so the evaluation of the pipeline was done
 | **Total** | - | **250.31** |
 
 
-** Keep?**
-This experiment was carried out eagerly, while the optuna optuna study for fine tuning the model in the previous experiment was being executed, and before having obtained the results of the fine the before seeing the results of 
-
 # Future Improvements
 
-While the results of the fine tuned Swin model were not too unsatisfactory, there is much room for improvement. First, the model shootout experiment went terribly wrong and it should be fixed. 
-Second, both optuna studies could have been ran for much longer to obtain better results. The results of one promising fine tuning study with over 50 completed trials was accidentally lost, and the second time that
-the study was ran, the range of the number of epochs was modified mid study, which caused optuna perform suboptimally, yielding no better studies as it ran sampling the new search space. So it would have been ideal to have 
-both hyperparemeter optimization experiments running properly and for much longer. Moreover, better results could be achieved theoretically by removing outliers from the dataset, 
-and performing data augmentations like in @autoaugment and @randaugment. And finally, it is highly plausible that the studies for selecting a suitable architecture and fine tuning a model can be further improved.
-
-Finally, more experiments could be carried out, perhaps by training more models on different targets, and investigating which combination can yield better results. Some future ideas could be:
+While the results of the fine tuned Swin model were not too unsatisfactory, there is much room for improvement. 
+First, both optuna studies could have been ran for much longer to obtain better results. The results of one promising fine tuning study with over 50 completed trials was accidentally lost, and the second time that
+the study was ran, the range of the number of epochs was modified mid study, which caused optuna to perform suboptimally, yielding no better studies as it ran sampling the new search space. So it would have been ideal to have 
+both hyperparemeter optimization experiments running properly and for much longer. In addition, better results could be achieved theoretically by removing outliers from the dataset, 
+and performing data augmentations like in @autoaugment and @randaugment. Moreover, it is highly plausible that the studies for selecting a suitable architecture and fine tuning a model can be further improved.
+And finally, more experiments could be carried out, perhaps by training more models on different targets, and investigating which combination yields the best results. Some future ideas could be:
 
 - One model to predict each macronutrient mass
 - One model to predict total mass and another to predict the distribution of the three macronutrients (although this does not address varying calorie densities of different foods)
 - A pipeline like one described in @from_pixels_to_cals _"[A standard] Pipeline typically consists of food detection, classification, and portion estimation"_
 
-These are important insights that should be addressed in future work which could yield surprising results.  
+These are important considearations that should be addressed in future work which could yield surprising results.  
 
 #  References
 

@@ -21,14 +21,14 @@ train_df, val_df, hidden_df = three_way_split(CSV_PATH, TARGETS, SEED)
 
 
 def objective(trial):
-    N_UNITS = trial.suggest_int('n_units', 256, 1024)
+    N_UNITS = trial.suggest_categorical('n_units', [256, 512, 768, 1024])
     DROPOUT = trial.suggest_float('dropout', 0.1, 0.5)
     FE_LR = trial.suggest_float('fe_lr', 1e-5, 1e-2, log=True)
-    FT_LR = trial.suggest_float('ft_lr', 1e-6, 1e-4, log=True)
+    FT_LR = trial.suggest_float('ft_lr', 1e-6, 1e-3, log=True)
     FE_WEIGHT_DECAY = trial.suggest_float('fe_weight_decay', 1e-4, 1e-1, log=True)
     FT_WEIGHT_DECAY = trial.suggest_float('ft_weight_decay', 1e-4, 1e-1, log=True)
     FE_EPOCHS = trial.suggest_int('fe_epochs', 5, 20)
-    FT_EPOCHS = trial.suggest_int('ft_epochs', 10, 80)
+    FT_EPOCHS = trial.suggest_int('ft_epochs', 30, 120)
     LOSS = trial.suggest_categorical('loss', ['L1', 'MSE', 'Huber'])
 
     model, transforms = get_Swin_V2_S(feature_extraction=True, verbose=False, modify_head=False)
@@ -69,10 +69,10 @@ def objective(trial):
 def main():
     Path(STUDIES_DIR).mkdir(exist_ok=True, parents=True)
     study = optuna.create_study(
-        study_name='sequential_fine_tuning', 
+        study_name='seq_ft_2', 
         storage=f'sqlite:///{STUDIES_DIR}/sequential_fine_tuning.db',
         direction='minimize',
         load_if_exists=True,
         pruner=optuna.pruners.HyperbandPruner()
     )
-    study.optimize(objective, n_trials=60)
+    study.optimize(objective, n_trials=100)
