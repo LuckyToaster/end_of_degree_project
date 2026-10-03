@@ -17,7 +17,7 @@ TARGETS = ['fat_g', 'carb_g', 'prot_g']
 SEED = 1
 BS = 64
 
-train_df, val_df, hidden_df = three_way_split(CSV_PATH, TARGETS, SEED)
+train_df, val_df, test_df = three_way_split(CSV_PATH, TARGETS, SEED)
 
 
 def objective(trial):
@@ -27,8 +27,8 @@ def objective(trial):
     FT_LR = trial.suggest_float('ft_lr', 1e-6, 1e-3, log=True)
     FE_WEIGHT_DECAY = trial.suggest_float('fe_weight_decay', 1e-4, 1e-1, log=True)
     FT_WEIGHT_DECAY = trial.suggest_float('ft_weight_decay', 1e-4, 1e-1, log=True)
-    FE_EPOCHS = trial.suggest_int('fe_epochs', 5, 20)
-    FT_EPOCHS = trial.suggest_int('ft_epochs', 30, 120)
+    FE_EPOCHS = trial.suggest_int('fe_epochs', 5, 25)
+    FT_EPOCHS = trial.suggest_int('ft_epochs', 20, 120)
     LOSS = trial.suggest_categorical('loss', ['L1', 'MSE', 'Huber'])
 
     model, transforms = get_Swin_V2_S(feature_extraction=True, verbose=False, modify_head=False)

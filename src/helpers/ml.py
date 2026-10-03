@@ -11,8 +11,8 @@ def three_way_split(csv_path: str, targets: list[str], seed: int) -> tuple[DataF
     df = pd.read_csv(csv_path)
     train_df, test_df = train_test_split(df, test_size=0.2, random_state=seed)
     train_df[targets], test_df[targets] = standardize(train_df[targets], test_df[targets])
-    val_df, hidden_df = train_test_split(test_df, test_size=0.5, random_state=seed)
-    return train_df, val_df, hidden_df
+    val_df, test_df = train_test_split(test_df, test_size=0.5, random_state=seed)
+    return train_df, val_df, test_df
 
 
 def standardize(train_df, test_df):
