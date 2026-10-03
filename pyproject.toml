@@ -38,7 +38,7 @@ packages = ["src"]
 [project.scripts]
 load-data='src.scripts.load_data:main'
 model-shootout='src.studies.model_shootout:main'
-sequential-fine-tuning='src.studies.sequential_fine_tuning:main'
+swin-fine-tuning='src.studies.swin_fine_tuning:main'
 platemate='src.scripts.platemate_agent:main'
 plot-losses='src.scripts.plot_losses:main'
 view-studies='src.scripts.view_studies:main'
