@@ -13,8 +13,8 @@ def main():
         print("Error: Argument must be in format <study_name>.<db_name>")
         sys.exit(1)
         
-    study_name = args[0]
-    db_name = args[1]
+    db_name = args[0]
+    study_name = args[1]
     
     storage_url = f'sqlite:///{STUDIES_DIR}/{db_name}.db'
     
@@ -47,6 +47,3 @@ def main():
                 print(f"  {key}: List of {len(value)} items")
             else:
                 print(f"  {key}: {value}")
-
-if __name__ == "__main__":
-    main()
