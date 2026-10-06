@@ -66,6 +66,7 @@ def get_predictions(loader, model, device):
     return torch.cat(all_preds), torch.cat(all_targets)
 
 
+# get rid of the lasst redundant arguments
 def train_eval_loop(model, epochs, train_loader, val_loader, criterion, optimizer, device, trial=None, starting_epoch=0, save_dir=None, model_name="model"):
     losses = {'train': [], 'val': []}
     scaler = torch.amp.GradScaler('cuda')
@@ -102,6 +103,7 @@ def train_eval_loop(model, epochs, train_loader, val_loader, criterion, optimize
 def train_epoch(loader, model, criterion, optimizer, device, epoch_n, scaler):
     model.train()
     running_loss = 0.0
+    running_raw_loss = 0.0
     running_losses = [0 for i in range(len(loader.dataset.targets[0]))]
     # running_losses = [0.0, 0.0, 0.0]
 
@@ -116,9 +118,12 @@ def train_epoch(loader, model, criterion, optimizer, device, epoch_n, scaler):
 
         # Calculate individual losses (no gradients needed for tracking)
         with torch.no_grad():
+            base_criterion = criterion.criterion if hasattr(criterion, 'criterion') else criterion
+            raw_loss = base_criterion(outputs, targets.view_as(outputs))
+            running_raw_loss += raw_loss.item()
             for i in range(outputs.shape[1]): # range(3)
                 # Calculate loss for just the i-th column/output
-                ind_loss = criterion(outputs[:, i], targets[:, i])
+                ind_loss = base_criterion(outputs[:, i], targets[:, i])
                 running_losses[i] += ind_loss.item()
 
         scaler.scale(loss).backward()
@@ -130,14 +135,17 @@ def train_epoch(loader, model, criterion, optimizer, device, epoch_n, scaler):
         loop.set_postfix(loss=loss.item())
 
     avg_loss = running_loss / len(loader)
+    avg_raw_loss = running_raw_loss / len(loader)
     avg_losses = [l / len(loader) for l in running_losses]
     avg_losses.append(avg_loss)
+    avg_losses.append(avg_raw_loss)
     return avg_losses 
 
 
 def validate(loader, model, criterion, device):
     model.eval()
     running_loss = 0.0
+    running_raw_loss = 0.0
     running_losses = [0 for i in range(len(loader.dataset.targets[0]))]
     # [0.0, 0.0, 0.0]
 
@@ -152,11 +160,17 @@ def validate(loader, model, criterion, device):
                 loss = criterion(pred, y)
                 running_loss += loss.item()
                 
+                base_criterion = criterion.criterion if hasattr(criterion, 'criterion') else criterion
+                raw_loss = base_criterion(pred, y)
+                running_raw_loss += raw_loss.item()
+                
                 for i in range(len(running_losses)):
-                    ind_loss = criterion(pred[:, i], y[:, i])
+                    ind_loss = base_criterion(pred[:, i], y[:, i])
                     running_losses[i] += ind_loss.item()
                 
     avg_loss = running_loss / len(loader)
+    avg_raw_loss = running_raw_loss / len(loader)
     avg_losses = [l / len(loader) for l in running_losses]
     avg_losses.append(avg_loss)
+    avg_losses.append(avg_raw_loss)
     return avg_losses 
