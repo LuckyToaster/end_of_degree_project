@@ -1,3 +1,3 @@
 CSV_PATH = 'data/food_dataset.csv'
-STUDIES_DIR = 'data/studies'
+OPTUNA_DB_PATH = 'data/optuna.db'
 PLOTS_DIR = 'data/plots'

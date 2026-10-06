@@ -1,11 +1,10 @@
-from pathlib import Path
 import torch, optuna, gc
 from torch.utils.data import DataLoader
 from torch import nn
 from torchvision.transforms import v2
 
 from src.dataset import FoodDataset
-from src.constants import STUDIES_DIR, CSV_PATH
+from src.constants import OPTUNA_DB_PATH, CSV_PATH
 from src.helpers.models import freeze, unfreeze, get_Swin_V2_S
 from src.helpers.ml import train_eval_loop, three_way_split, CustomCriterion
 
@@ -16,6 +15,8 @@ INPUT = 'img_path'
 TARGETS = ['fat_g', 'carb_g', 'prot_g', 'kcal']
 SEED = 1
 BS = 64
+FE_EPOCHS = 5
+FT_EPOCHS = 50
 
 dataloader_args = dict(batch_size=BS, shuffle=True, num_workers=4, pin_memory=True, persistent_workers=True)
 train_df, val_df, test_df = three_way_split(CSV_PATH, TARGETS, SEED)
@@ -27,9 +28,6 @@ def objective(trial):
     FT_LR = trial.suggest_float('ft_lr', 1e-5, 1e-3, log=True)
     FE_WEIGHT_DECAY = trial.suggest_float('fe_weight_decay', 1e-4, 1e-1, log=True)
     FT_WEIGHT_DECAY = trial.suggest_float('ft_weight_decay', 1e-4, 1e-1, log=True)
-    FE_EPOCHS = trial.suggest_int('fe_epochs', 5, 20)
-    FT_EPOCHS = trial.suggest_int('ft_epochs', 20, 100)
-    # LOSS = trial.suggest_categorical('loss', ['L1', 'MSE', 'Huber'])
 
     model, val_transforms = get_Swin_V2_S(verbose=False)
     train_transforms = v2.Compose([
@@ -81,12 +79,11 @@ def objective(trial):
 
 
 def main():
-    Path(STUDIES_DIR).mkdir(exist_ok=True, parents=True)
     study = optuna.create_study(
         study_name='swin_ft_scl',
-        storage=f'sqlite:///{STUDIES_DIR}/fine_tuning.db',
+        storage=f'sqlite:///{OPTUNA_DB_PATH}',
         direction='minimize',
         load_if_exists=True,
-        pruner=optuna.pruners.HyperbandPruner()
+        pruner=optuna.pruners.HyperbandPruner(min_resource=FE_EPOCHS, max_resource=FT_EPOCHS)
     )
-    study.optimize(objective, n_trials=100)
+    study.optimize(objective, n_trials=50)
