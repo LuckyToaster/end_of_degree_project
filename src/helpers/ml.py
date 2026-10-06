@@ -99,7 +99,7 @@ def train_eval_loop(model, epochs, train_loader, val_loader, criterion, optimize
     return losses
 
 
-def train_epoch(loader, model, criterion, optimizer, device, epoch_n, scaler, targets):
+def train_epoch(loader, model, criterion, optimizer, device, epoch_n, scaler):
     model.train()
     running_loss = 0.0
     running_losses = [0 for i in range(len(loader.dataset.targets[0]))]
@@ -135,7 +135,7 @@ def train_epoch(loader, model, criterion, optimizer, device, epoch_n, scaler, ta
     return avg_losses 
 
 
-def validate(loader, model, criterion, device, targets):
+def validate(loader, model, criterion, device):
     model.eval()
     running_loss = 0.0
     running_losses = [0 for i in range(len(loader.dataset.targets[0]))]
