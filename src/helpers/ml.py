@@ -21,6 +21,29 @@ def standardize(train_df, test_df):
     return scaler.fit_transform(train_df), scaler.transform(test_df)
 
 
+# embedding structural rules directly into the loss is called soft constraint optimization or physics informed optimization
+class CustomCriterion(torch.nn.Module):
+    def __init__(self, criterion_function, alpha=0.1, beta=0.5):
+        super().__init__()
+        self.criterion = criterion_function
+        self.alpha = alpha
+        self.beta = beta
+
+    def forward(self, preds, targets): # preds (batch_size, 4) targets (fat, prot, carb
+        mse_loss = self.criterion(preds, targets)
+
+        pred_f = preds[:, 0]
+        pred_p = preds[:, 1]
+        pred_c = preds[:, 2]
+        pred_cal = preds[:, 3]
+
+        supposed_cal = (4 * pred_p) + (4 * pred_c) + (9 * pred_f) # TODO: or was it 8? 
+
+        constraint_loss = self.criterion(supposed_cal, pred_cal)
+
+        return (self.alpha * mse_loss) + (self.beta * constraint_loss)
+
+
 def get_scaler_on_train(csv_path: str, targets: list[str], seed: int) -> StandardScaler:
     df = pd.read_csv(csv_path)
     train_df, _ = train_test_split(df, test_size=0.2, random_state=seed)
@@ -54,7 +77,7 @@ def train_eval_loop(model, epochs, train_loader, val_loader, criterion, optimize
     for epoch in range(epochs): 
         actual_epoch = starting_epoch + epoch
 
-        train_losses = train_epoch(model, train_loader, criterion, optimizer, device, actual_epoch, scaler)
+        train_losses = train_epoch(train_loader, model, criterion, optimizer, device, actual_epoch, scaler)
         val_losses = validate(val_loader, model, criterion, device)
 
         losses['train'].append(train_losses)
@@ -76,12 +99,13 @@ def train_eval_loop(model, epochs, train_loader, val_loader, criterion, optimize
     return losses
 
 
-def train_epoch(model, train_loader, criterion, optimizer, device, epoch_n, scaler):
+def train_epoch(loader, model, criterion, optimizer, device, epoch_n, scaler, targets):
     model.train()
     running_loss = 0.0
-    running_losses = [0.0, 0.0, 0.0]
+    running_losses = [0 for i in range(len(loader.dataset.targets[0]))]
+    # running_losses = [0.0, 0.0, 0.0]
 
-    loop = tqdm(train_loader, desc=f"Epoch {epoch_n + 1}", leave=True, unit='batch')
+    loop = tqdm(loader, desc=f"Epoch {epoch_n + 1}", leave=True, unit='batch')
     for inputs, targets in loop:
         inputs = inputs.to(device, non_blocking=True)
         targets = targets.to(device, non_blocking=True).float()
@@ -92,7 +116,7 @@ def train_epoch(model, train_loader, criterion, optimizer, device, epoch_n, scal
 
         # Calculate individual losses (no gradients needed for tracking)
         with torch.no_grad():
-            for i in range(3):
+            for i in range(outputs.shape[1]): # range(3)
                 # Calculate loss for just the i-th column/output
                 ind_loss = criterion(outputs[:, i], targets[:, i])
                 running_losses[i] += ind_loss.item()
@@ -105,29 +129,32 @@ def train_epoch(model, train_loader, criterion, optimizer, device, epoch_n, scal
         running_loss += loss.item()
         loop.set_postfix(loss=loss.item())
 
-    avg_loss = running_loss / len(train_loader)
-    avg_losses = [l / len(train_loader) for l in running_losses]
+    avg_loss = running_loss / len(loader)
+    avg_losses = [l / len(loader) for l in running_losses]
     avg_losses.append(avg_loss)
     return avg_losses 
 
 
-def validate(loader, model, criterion, device):
+def validate(loader, model, criterion, device, targets):
     model.eval()
     running_loss = 0.0
-    running_losses = [0.0, 0.0, 0.0]
+    running_losses = [0 for i in range(len(loader.dataset.targets[0]))]
+    # [0.0, 0.0, 0.0]
 
     with torch.no_grad():
         for X, y in loader:
             X, y = X.to(device), y.to(device).float()
-            pred = model(X)
-            y = y.view_as(pred)
             
-            loss = criterion(pred, y)
-            running_loss += loss.item()
+            with torch.autocast(device_type=str(device), dtype=torch.float16):
+                pred = model(X)
+                y = y.view_as(pred)
             
-            for i in range(3):
-                ind_loss = criterion(pred[:, i], y[:, i])
-                running_losses[i] += ind_loss.item()
+                loss = criterion(pred, y)
+                running_loss += loss.item()
+                
+                for i in range(len(running_losses)):
+                    ind_loss = criterion(pred[:, i], y[:, i])
+                    running_losses[i] += ind_loss.item()
                 
     avg_loss = running_loss / len(loader)
     avg_losses = [l / len(loader) for l in running_losses]

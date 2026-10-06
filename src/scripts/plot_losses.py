@@ -44,6 +44,6 @@ def main():
     Path(PLOTS_DIR).mkdir(exist_ok=True, parents=True)
     plot_best_trial_losses(
         study_name=args[0], 
-        storage_path=f'sqlite:///{STUDIES_DIR}/{args[1]}.db',
-        dst_path=f'{PLOTS_DIR}/{args[0]}.png'
+        storage_path=f'sqlite:///{STUDIES_DIR}/{args[0]}.db',
+        dst_path=f'{PLOTS_DIR}/{args[1]}.png'
     )

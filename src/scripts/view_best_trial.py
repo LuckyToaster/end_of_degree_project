@@ -4,8 +4,8 @@ from src.constants import STUDIES_DIR
 
 def main():
     if len(sys.argv) < 2:
-        print("Usage: python -m src.scripts.view_study_trial <study_name>.<db_name>")
-        print("Example: python -m src.scripts.view_study_trial shootout_Swin_V2_S.model_shootout")
+        print("Usage: python -m src.scripts.view_study_trial <db_name>.<study_name>")
+        print("Example: python -m src.scripts.view_best_trial model_shootout.shootout_Swin_V2_S")
         sys.exit(1)
 
     args = sys.argv[1].split('.')
