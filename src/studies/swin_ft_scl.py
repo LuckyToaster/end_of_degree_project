@@ -86,4 +86,4 @@ def main():
         load_if_exists=True,
         pruner=optuna.pruners.HyperbandPruner(min_resource=FE_EPOCHS, max_resource=FT_EPOCHS)
     )
-    study.optimize(objective, n_trials=50)
+    study.optimize(objective, n_trials=200)
