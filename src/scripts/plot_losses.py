@@ -1,7 +1,7 @@
 from pathlib import Path
 import optuna, sys
 import plotly.graph_objects as go
-from src.constants import PLOTS_DIR, STUDIES_DIR
+from src.constants import PLOTS_DIR, OPTUNA_DB_PATH
 
 
 def plot_best_trial_losses(study_name, storage_path, dst_path):
@@ -40,10 +40,9 @@ def main():
         print('no argument provided', file=sys.stderr)
         exit(1)
 
-    args = sys.argv[1].split('.')
     Path(PLOTS_DIR).mkdir(exist_ok=True, parents=True)
     plot_best_trial_losses(
-        study_name=args[0], 
-        storage_path=f'sqlite:///{STUDIES_DIR}/{args[0]}.db',
-        dst_path=f'{PLOTS_DIR}/{args[1]}.png'
+        study_name=sys.argv[1], 
+        storage_path=f'sqlite:///{OPTUNA_DB_PATH}',
+        dst_path=f'{PLOTS_DIR}/{sys.argv[1]}.png'
     )
