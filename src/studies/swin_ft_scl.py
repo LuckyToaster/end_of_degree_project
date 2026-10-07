@@ -91,7 +91,7 @@ def objective(trial):
 def main():
     study = optuna.create_study(
         study_name='swin_ft_scl',
-        storage=f'sqlite:///{OPTUNA_DB_PATH}',
+        storage=OPTUNA_DB_PATH,
         direction='minimize',
         load_if_exists=True,
         pruner=optuna.pruners.HyperbandPruner(min_resource=FE_EPOCHS, max_resource=FT_EPOCHS)

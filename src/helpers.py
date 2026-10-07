@@ -18,7 +18,23 @@ from sys import stderr
 from tqdm import tqdm
 
 
-__all__ = [ 'remove_files', 'get_corrupted_images', 'download_and_resize_images']
+from torchviz import make_dot
+
+__all__ = [ 'remove_files', 'get_corrupted_images', 'download_and_resize_images', 'visualize_model']
+
+def visualize_model(model, input_size=(1, 3, 256, 256), filename="model_graph"):
+    """
+    Generate a Graphviz visualization of the PyTorch model architecture.
+    """
+    model.eval()
+    # Always run visualization on CPU
+    device = torch.device('cpu')
+    model.to(device)
+    dummy_input = torch.randn(input_size, device=device)
+    
+    yhat = model(dummy_input)
+    make_dot(yhat, params=dict(list(model.named_parameters()))).render(filename, format="png")
+    print(f"Model visualization saved to {filename}.png")
 
 def remove_files(paths: list[str], tqdm_desc='Removing files', tqdm_unit='file') -> None:
     try:

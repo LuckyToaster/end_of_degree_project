@@ -4,7 +4,7 @@ IMG_DISK_SIZE = 512
 
 CSV_PATH = 'data/food_dataset.csv'
 IMGS_DIR = 'data/imgs'
-OPTUNA_DB_PATH = 'data/optuna.db'
+OPTUNA_DB_PATH = 'sqlite:///data/optuna.db'
 MODEL_CHECKPOINTS_DIR = 'data/checkpoints'
 
 FIGURES_DIR = 'docs/figures'
