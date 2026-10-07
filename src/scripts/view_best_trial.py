@@ -4,8 +4,7 @@ from src.constants import OPTUNA_DB_PATH
 
 def main():
     if len(sys.argv) < 2:
-        print("Usage: python -m src.scripts.view_study_trial <db_name>.<study_name>")
-        print("Example: python -m src.scripts.view_best_trial model_shootout.shootout_Swin_V2_S")
+        print("Usage: python -m src.scripts.view_study_trial <study_name>")
         sys.exit(1)
 
     # args = sys.argv[1].split('.')
@@ -16,7 +15,7 @@ def main():
     
     try:
         print(sys.argv[1])
-        study = optuna.load_study(study_name=sys.argv[1].strip(), storage=f'sqlite:///{OPTUNA_DB_PATH}.db')
+        study = optuna.load_study(study_name=sys.argv[1].strip(), storage=f'sqlite:///{OPTUNA_DB_PATH}')
     except Exception as e:
         print(f"Failed to load study: {e}")
         sys.exit(1)
