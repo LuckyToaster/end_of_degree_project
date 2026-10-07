@@ -87,12 +87,3 @@ def main():
     out = json.loads(pipeline.invoke(input))
     out['kcal'] = (out['protein_g'] * 4) + (out['carbohydrate_g'] * 4) + (out['fat_g'] * 9)
     print(json.dumps(out, indent=4))
-
-    # from langchain_core.messages import HumanMessage, SystemMessage
-    # model = ChatGoogleGenerativeAI(model='gemini-3.1-flash-lite')
-    # image_b64 = read_image_base64("/home/lucky/Pictures/wallpaper/ahh.jpg")
-    # response = model.invoke([
-    #     SystemMessage(content=CLASSIFIER_SYS_PROMPT), 
-    #     HumanMessage(content=[{"type": "image_url", "image_url": {"url": f"data:image/jpeg;base64,{image_b64}"}}])
-    # ])
-    # print(response.content[-1]['text'])
