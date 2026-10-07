@@ -16,7 +16,7 @@ def main():
     
     try:
         print(sys.argv[1])
-        study = optuna.load_study(study_name=sys.argv[1], storage=f'sqlite:///{OPTUNA_DB_PATH}.db')
+        study = optuna.load_study(study_name=sys.argv[1].strip(), storage=f'sqlite:///{OPTUNA_DB_PATH}.db')
     except Exception as e:
         print(f"Failed to load study: {e}")
         sys.exit(1)
