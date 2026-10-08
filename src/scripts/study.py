@@ -44,7 +44,7 @@ def main():
 
     # guard
     if args.trial is None:
-        pydoc.pager(study.trials_dataframe().sort_values('value'))
+        pydoc.pager(study.trials_dataframe().sort_values('value').to_string())
         sys.exit(0)
 
     # guard
@@ -62,10 +62,6 @@ def main():
             
         train_losses = trial.user_attrs.get("train_losses", [])
         val_losses = trial.user_attrs.get("val_losses", [])
-        
-        # if not train_losses or not val_losses:
-        #     print(f"Warning: Trial {trial.number} does not have 'train_losses' or 'val_losses' user attributes.", file=sys.stderr)
-        #     sys.exit(1)
             
         train_avg_losses = [epoch[-1] for epoch in train_losses]
         val_avg_losses = [epoch[-1] for epoch in val_losses]
