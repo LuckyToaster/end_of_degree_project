@@ -48,7 +48,7 @@ def main():
         study = optuna.load_study(study_name=args.study_name, storage=OPTUNA_DB_PATH)
     except: raise ValueError(f'Study name \'{args.study_name}\' does not exist')
 
-    if args.trial >= len(study.trials):
+    if type(args.trial) == int and args.trial >= len(study.trials):
         raise ValueError(f'There are {len(study.trials)} trials in {args.study_name}. The largest --trial value permitted is {len(study.trials) - 1}')
 
     # trial
