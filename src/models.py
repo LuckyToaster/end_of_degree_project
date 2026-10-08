@@ -47,18 +47,18 @@ def get_MobileNet_V3_L(n_targets: int, verbose=True):
     return model, preprocess
 
 
-def get_Swin_V2_S(n_targets: int, verbose=False, visualize=True):
+def get_Swin_V2_S(n_targets: int, verbose=False):
     weights = Swin_V2_S_Weights.DEFAULT
     val_transforms = weights.transforms() # default validation / inference transforms
     model = swin_v2_s(weights=weights)
     model.head = Linear(model.head.in_features, n_targets) # adapt the head for regression
 
-    if verbose: print(model)
-    if visualize: # https://stackoverflow.com/questions/52468956/how-do-i-visualize-a-net-in-pytorch
-        device = torch.device('cuda')
-        model.to(device)
-        yhat = model(torch.randn(1, 3, 256, 256, device=device))
-        make_dot(yhat, params=dict(list(model.named_parameters()))).render("rnn_torchviz", format="png")
+    # if verbose: print(model)
+    # if visualize: # https://stackoverflow.com/questions/52468956/how-do-i-visualize-a-net-in-pytorch
+    #     device = torch.device('cuda')
+    #     model.to(device)
+    #     yhat = model(torch.randn(1, 3, 256, 256, device=device))
+    #     make_dot(yhat, params=dict(list(model.named_parameters()))).render("rnn_torchviz", format="png")
 
     # transforms with data augmentation for training
     train_transforms = v2.Compose([
