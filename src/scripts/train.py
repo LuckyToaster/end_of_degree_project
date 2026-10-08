@@ -19,14 +19,13 @@ MODEL_REGISTRY = {
 }
 
 def parse_args():
+
+def main():
     parser = argparse.ArgumentParser(description="Train a model based on Optuna study parameters.")
     parser.add_argument("study_name", help="The name of the Optuna study to pull parameters from.")
     parser.add_argument("model_name", choices=list(MODEL_REGISTRY.keys()), help="The model architecture to train.")
     parser.add_argument("-t", "--trial", default="best", help="The trial number to use, or 'best'. Defaults to 'best'.")
-    return parser.parse_args()
-
-def main():
-    args = parse_args()
+    args = parser.parse_args()
     
     # 1. Load Optuna Study & Trial
     print(f"Loading study: {args.study_name}")

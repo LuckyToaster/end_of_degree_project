@@ -44,7 +44,10 @@ def main():
 
     # guard
     if args.trial is None:
-        pydoc.pager(study.trials_dataframe().sort_values('value').to_string())
+        pydoc.pipe_pager(
+            study.trials_dataframe().sort_values('value').to_string(),
+            cmd='less -R'
+        )
         sys.exit(0)
 
     # guard
