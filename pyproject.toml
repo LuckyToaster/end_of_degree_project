@@ -40,5 +40,6 @@ packages = ["src"]
 [project.scripts]
 load-data='src.scripts.load_data:main'
 study='src.scripts.study:main'
+train_test='src.scripts.train_test:main'
 swin-ft='src.studies.swin_fine_tuning:main'
 swin-ft-scl='src.studies.swin_ft_scl:main'
