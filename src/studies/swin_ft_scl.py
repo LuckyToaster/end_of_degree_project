@@ -5,8 +5,8 @@ from torchvision.transforms import v2
 
 from src.dataset import FoodDataset
 from src.constants import OPTUNA_DB_PATH, CSV_PATH
-from src.helpers.models import get_Swin_V2_S
-from src.helpers.ml import train_eval_loop, three_way_split, standardize, dataloader_args
+from src.models import get_Swin_V2_S
+from src.ml import train_eval_loop, three_way_split, standardize, dataloader_args
 
 
 # embedding structural rules directly into the loss is called soft constraint optimization or physics informed optimization
