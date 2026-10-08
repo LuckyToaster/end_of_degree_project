@@ -19,7 +19,7 @@ from src.dataset import FoodDataset
 from src.ml import train_eval_loop, three_way_split, standardize, destandardize, dataloader_args
 from src.models import get_Swin_V2_S, get_EfficientNet_B3, get_EfficientNet_V2_S, get_MobileNet_V3_L
 
-TARGETS = ['fat_g', 'carb_g', 'prot_g', 'kcal']
+TARGETS = ['fat_g', 'carb_g', 'prot_g']
 BS = 16
 DEVICE = torch.device('cuda')
 MODELS = {
@@ -56,7 +56,7 @@ def main():
     params = trial.params
 
     # model
-    model, train_transforms, val_transforms = MODELS[args.model_name]()
+    model, train_transforms, val_transforms = MODELS[args.model_name](n_targets=len(TARGETS))
     for param in model.parameters(): param.requires_grad = False    # freeze for feature extraction
     model = model.to(DEVICE)                                        # load to GPU
 
