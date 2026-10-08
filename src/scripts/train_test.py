@@ -67,6 +67,7 @@ def main():
     # feature extraction
     optimizer = AdamW(model.head.parameters(), lr=params['fe_lr'], weight_decay=params['fe_weight_decay'], fused=True)
     # train_eval_loop(model, train_loader, val_loader, params['fe_epochs'], HuberLoss(), optimizer)
+    scheduler = CosineAnnealingLR(optimizer, T_max=fe_epochs)
     train_eval_loop(model, train_loader, val_loader, fe_epochs, HuberLoss(), optimizer)
     del optimizer
     gc.collect()
