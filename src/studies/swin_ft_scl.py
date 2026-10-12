@@ -49,7 +49,7 @@ def objective(trial):
     FE_WEIGHT_DECAY = trial.suggest_float('fe_weight_decay', 1e-4, 1e-1, log=True)
     FT_WEIGHT_DECAY = trial.suggest_float('ft_weight_decay', 1e-4, 1e-1, log=True)
 
-    model, train_transforms, val_transforms = get_Swin_V2_S(verbose=False)
+    model, train_transforms, val_transforms = get_Swin_V2_S(n_targets=len(TARGETS), verbose=False)
 
     for param in model.parameters(): param.requires_grad = False    # freeze for feature extraction
     model = model.to(device)                                        # load to GPU
