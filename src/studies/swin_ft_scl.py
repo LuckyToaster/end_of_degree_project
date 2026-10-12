@@ -106,5 +106,3 @@ def main():
     study.set_user_attr('target_stds', stds)
 
     study.optimize(objective, n_trials=200)
-
-
