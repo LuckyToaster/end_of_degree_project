@@ -52,6 +52,7 @@ def objective(trial):
     model, train_transforms, val_transforms = get_Swin_V2_S(n_targets=len(TARGETS), verbose=False)
 
     for param in model.parameters(): param.requires_grad = False    # freeze for feature extraction
+    for param in model.head.parameters(): param.requires_grad = True # unfreeze head
     model = model.to(device)                                        # load to GPU
 
     train_loader = DataLoader(FoodDataset(train_df, train_transforms, INPUT, TARGETS), batch_size=BS, shuffle=True, **dataloader_args)
