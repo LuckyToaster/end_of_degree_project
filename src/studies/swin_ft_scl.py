@@ -58,7 +58,7 @@ def objective(trial):
     val_loader = DataLoader(FoodDataset(val_df, val_transforms, INPUT, TARGETS), batch_size=BS, shuffle=False, **dataloader_args)
 
     criterion = CustomCriterion(nn.HuberLoss(), ALPHA, 1.0 - ALPHA)
-    fe_optimizer, optimizer = None, None
+    fe_optimizer, optimizer, scheduler = None, None, None
     try:
         # feature extraction (warm up)
         fe_optimizer = torch.optim.AdamW(model.head.parameters(), lr=FE_LR, weight_decay=FE_WEIGHT_DECAY, fused=True)
