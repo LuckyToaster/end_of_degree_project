@@ -11,21 +11,24 @@ from src.ml import train_eval_loop, three_way_split, standardize, dataloader_arg
 
 # embedding structural rules directly into the loss is called soft constraint optimization or physics informed optimization
 class CustomCriterion(torch.nn.Module):
-    def __init__(self, criterion_function, alpha=0.1, beta=0.5):
+    def __init__(self, criterion_function, alpha=0.5): # alpha from [0,1], proportion of how much the constrained loss matters
         super().__init__()
         self.criterion = criterion_function
         self.alpha = alpha
-        self.beta = beta
+        self.beta = 1 - alpha
 
-    def forward(self, preds, targets): # preds (batch_size, 4) targets (fat, prot, carb
-        mse_loss = self.criterion(preds, targets)
-        pred_f = preds[:, 0]
-        pred_p = preds[:, 1]
-        pred_c = preds[:, 2]
-        pred_cal = preds[:, 3]
-        supposed_cal = (4 * pred_p) + (4 * pred_c) + (9 * pred_f) # TODO: or was it 8? 
-        constraint_loss = self.criterion(supposed_cal, pred_cal)
-        return (self.alpha * mse_loss) + (self.beta * constraint_loss)
+    def forward(self, preds, targets): # preds (batch_size, 4) targets (fat, prot, carb, kcal)
+        loss = self.criterion(preds, targets)
+
+        idxs = { name:i for i,name in enumerate(targets) }
+        pred_fat = preds[:, idxs['fat_g']] 
+        pred_carb = preds[:, idxs['carb_g']]
+        pred_prot = preds[:, idxs['prot_g']]
+        pred_kcal = preds[:, idxs['kcal']]
+
+        supposed_cal = (4 * pred_carb) + (4 * pred_prot) + (9 * pred_fat)
+        constraint_loss = self.criterion(supposed_cal, pred_kcal)
+        return (self.beta * loss) + (self.alpha * constraint_loss)
 
 
 INPUT = 'img_path'
@@ -43,11 +46,11 @@ train_df, val_df, test_df, means, stds = standardize(train_df, val_df, test_df, 
 
 
 def objective(trial):
-    ALPHA = trial.suggest_float('custom_criterion_alpha', 0, 1)
-    FE_LR = trial.suggest_float('fe_lr', 1e-4, 1e-2, log=True)
+    ALPHA = trial.suggest_float('custom_criterion_alpha', 0.1, 0.9)
+    FE_LR = trial.suggest_float('fe_lr', 1e-4, 1e-3, log=True)
     FT_LR = trial.suggest_float('ft_lr', 1e-5, 1e-3, log=True)
-    FE_WEIGHT_DECAY = trial.suggest_float('fe_weight_decay', 1e-4, 1e-1, log=True)
-    FT_WEIGHT_DECAY = trial.suggest_float('ft_weight_decay', 1e-4, 1e-1, log=True)
+    FE_WEIGHT_DECAY = trial.suggest_float('fe_weight_decay', 1e-4, 1e-2, log=True)
+    FT_WEIGHT_DECAY = trial.suggest_float('ft_weight_decay', 1e-4, 1e-2, log=True)
 
     model, train_transforms, val_transforms = get_Swin_V2_S(n_targets=len(TARGETS), verbose=False)
 
@@ -91,11 +94,11 @@ def objective(trial):
 
 def main():
     study = optuna.create_study(
-        study_name='swin_ft_scl',
+        study_name='swin_ft_scl_v2',
         storage=OPTUNA_DB_PATH,
         direction='minimize',
         load_if_exists=True,
-        pruner=optuna.pruners.HyperbandPruner(min_resource=FE_EPOCHS, max_resource=FT_EPOCHS)
+        pruner=optuna.pruners.HyperbandPruner(min_resource=FE_EPOCHS, max_resource=FE_EPOCHS + FT_EPOCHS)
     )
 
     study.set_user_attr('targets', TARGETS)

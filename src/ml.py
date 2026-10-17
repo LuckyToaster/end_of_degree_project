@@ -17,8 +17,8 @@ __all__ = [
     'dataloader_args',
     'standardize',
     'destandardize',
-    'get_predictions'
-    'train_eval_loop',
+    'get_predictions',
+    'train_eval_loop'
 ]
 
 dataloader_args = dict(num_workers=4, pin_memory=True, persistent_workers=True)
@@ -116,7 +116,7 @@ def train_eval_loop(model, train_loader, val_loader, epochs, criterion, optimize
 
         losses['train'].append(train_losses)
         losses['val'].append(val_losses)
-        print(f'Epoch {actual_epoch+1}: (Train {round(train_losses['backprop_loss'])}, raw {train_losses['optuna_loss']}), (Val {round(val_losses['backprop_loss'])}, raw {val_losses['optuna_loss']})')
+        print(f"Epoch {actual_epoch+1}: (Train {round(train_losses['backprop_loss'])}, raw {train_losses['optuna_loss']}), (Val {round(val_losses['backprop_loss'])}, raw {val_losses['optuna_loss']})")
 
     return losses 
 
