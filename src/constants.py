@@ -4,6 +4,7 @@ IMG_DISK_SIZE = 512
 
 SEED = 1
 INPUT = 'img_path'
+TARGETS = ['fat_g', 'carb_g', 'prot_g', 'kcal']
 
 CSV_PATH = 'data/food_dataset.csv'
 IMGS_DIR = 'data/imgs'

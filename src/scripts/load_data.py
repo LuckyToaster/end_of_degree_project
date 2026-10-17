@@ -3,7 +3,7 @@ import pandas as pd
 from pandas import DataFrame
 import json
 from src.helpers import get_corrupted_images, download_and_resize_images, remove_files
-from src.constants import CSV_PATH, DATASET_URL, IMG_DISK_SIZE, IMGS_DIR, DF_COLS_TO_KEEP
+from src.constants import CSV_PATH, DATASET_URL, IMG_DISK_SIZE, IMGS_DIR, DF_COLS_TO_KEEP, TARGETS
 
 
 def reshape(df: DataFrame):
@@ -11,9 +11,8 @@ def reshape(df: DataFrame):
     # create and populate img_path column
     df['img_path'] = IMGS_DIR + '/' + df.index.astype(str) + '.jpeg'
     # extract the targets from nutritional_profile column into their own columns
-    new_targets = [ 'fat_g', 'carb_g', 'prot_g', 'kcal' ]
-    old_targets = [ 'fat_g', 'carbohydrate_g', 'protein_g', 'calories_kcal']
-    df[new_targets] = df['nutritional_profile'].apply(lambda x: pd.Series(json.loads(x)))[old_targets].astype(float)
+    old_targets = [ 'fat_g', 'carbohydrate_g', 'protein_g', 'calories_kcal'] # raw column names inside the nutritional_profile json
+    df[TARGETS] = df['nutritional_profile'].apply(lambda x: pd.Series(json.loads(x)))[old_targets].astype(float)
     # drop unneeded columns
     to_drop = list(set(df.columns) - set(DF_COLS_TO_KEEP))
     df = df.drop(columns=to_drop)

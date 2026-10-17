@@ -1,10 +1,11 @@
-import torch, optuna, gc
+import torch, optuna, gc, random
+import numpy as np
 from torch.utils.data import DataLoader
 from torch import nn
 from torchvision.transforms import v2
 
 from src.dataset import FoodDataset
-from src.constants import OPTUNA_DB_PATH, CSV_PATH
+from src.constants import OPTUNA_DB_PATH, CSV_PATH, SEED, INPUT, TARGETS
 from src.models import get_Swin_V2_S
 from src.ml import train_eval_loop, three_way_split, standardize, dataloader_args
 
@@ -16,24 +17,21 @@ class CustomCriterion(torch.nn.Module):
         self.criterion = criterion_function
         self.alpha = alpha
         self.beta = 1 - alpha
+        self.idxs = {name: i for i, name in enumerate(TARGETS)} # map target names to output indices, head output i learns TARGETS[i]
 
-    def forward(self, preds, targets): # preds (batch_size, 4) targets (fat, prot, carb, kcal)
+    def forward(self, preds, targets): # preds and targets (batch_size, 4) ordered as TARGETS (fat, carb, prot, kcal)
         loss = self.criterion(preds, targets)
 
-        idxs = { name:i for i,name in enumerate(targets) }
-        pred_fat = preds[:, idxs['fat_g']] 
-        pred_carb = preds[:, idxs['carb_g']]
-        pred_prot = preds[:, idxs['prot_g']]
-        pred_kcal = preds[:, idxs['kcal']]
+        pred_fat = preds[:, self.idxs['fat_g']]
+        pred_carb = preds[:, self.idxs['carb_g']]
+        pred_prot = preds[:, self.idxs['prot_g']]
+        pred_kcal = preds[:, self.idxs['kcal']]
 
         supposed_cal = (4 * pred_carb) + (4 * pred_prot) + (9 * pred_fat)
         constraint_loss = self.criterion(supposed_cal, pred_kcal)
         return (self.beta * loss) + (self.alpha * constraint_loss)
 
 
-INPUT = 'img_path'
-TARGETS = ['fat_g', 'carb_g', 'prot_g', 'kcal']
-SEED = 1
 BS = 64
 FE_EPOCHS = 5
 FT_EPOCHS = 50
@@ -45,7 +43,24 @@ train_df, val_df, test_df = three_way_split(CSV_PATH, SEED, stratify_target='kca
 train_df, val_df, test_df, means, stds = standardize(train_df, val_df, test_df, TARGETS)
 
 
+def seed_worker(worker_id):
+    # DataLoader worker processes have their own RNG copies; seed them from the torch generator
+    worker_seed = torch.initial_seed() % 2**32
+    np.random.seed(worker_seed)
+    random.seed(worker_seed)
+
+
 def objective(trial):
+    # per-trial seeding: every RNG (shuffle, TrivialAugmentWide/RandomResizedCrop, head init, dropout)
+    # becomes a fixed function of trial.number, so val loss differences are attributable to hyperparameters only
+    seed = SEED + trial.number
+    random.seed(seed)
+    np.random.seed(seed)
+    torch.manual_seed(seed) # also seeds CUDA RNG
+
+    generator = torch.Generator()
+    generator.manual_seed(seed)
+
     ALPHA = trial.suggest_float('custom_criterion_alpha', 0.1, 0.9)
     FE_LR = trial.suggest_float('fe_lr', 1e-4, 1e-3, log=True)
     FT_LR = trial.suggest_float('ft_lr', 1e-5, 1e-3, log=True)
@@ -58,10 +73,10 @@ def objective(trial):
     for param in model.head.parameters(): param.requires_grad = True # unfreeze head
     model = model.to(device)                                        # load to GPU
 
-    train_loader = DataLoader(FoodDataset(train_df, train_transforms, INPUT, TARGETS), batch_size=BS, shuffle=True, **dataloader_args)
+    train_loader = DataLoader(FoodDataset(train_df, train_transforms, INPUT, TARGETS), batch_size=BS, shuffle=True, generator=generator, worker_init_fn=seed_worker, **dataloader_args)
     val_loader = DataLoader(FoodDataset(val_df, val_transforms, INPUT, TARGETS), batch_size=BS, shuffle=False, **dataloader_args)
 
-    criterion = CustomCriterion(nn.HuberLoss(), ALPHA, 1.0 - ALPHA)
+    criterion = CustomCriterion(nn.HuberLoss(), ALPHA)
     fe_optimizer, optimizer, scheduler = None, None, None
     try:
         # feature extraction (warm up)

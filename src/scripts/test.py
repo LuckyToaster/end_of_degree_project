@@ -4,7 +4,7 @@ import sys
 from pathlib import Path
 from torch.utils.data import DataLoader
 
-from src.constants import CSV_PATH
+from src.constants import CSV_PATH, TARGETS
 from src.dataset import FoodDataset
 from src.ml import three_way_split, standardize, dataloader_args
 from src.models import get_Swin_V2_S, get_EfficientNet_B3, get_EfficientNet_V2_S, get_MobileNet_V3_L
@@ -20,7 +20,7 @@ def parse_args():
     parser = argparse.ArgumentParser(description="Test a trained model checkpoint on the holdout test set.")
     parser.add_argument("model_name", choices=list(MODEL_REGISTRY.keys()), help="The model architecture to load.")
     parser.add_argument("checkpoint", help="Path to the trained model checkpoint (.pt file).")
-    parser.add_argument("--targets", nargs='+', default=['fat_g', 'carb_g', 'prot_g', 'kcal'], help="Target columns the model was trained on.")
+    parser.add_argument("--targets", nargs='+', default=list(TARGETS), help="Target columns the model was trained on.")
     parser.add_argument("--seed", type=int, default=1, help="Random seed used for data splitting (to ensure identical test set).")
     parser.add_argument("--batch-size", type=int, default=64, help="Batch size for inference.")
     return parser.parse_args()

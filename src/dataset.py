@@ -3,8 +3,10 @@ from PIL import Image
 from torch import from_numpy
 from random import randint
 
+from src.constants import INPUT, TARGETS
+
 class FoodDataset(Dataset):
-    def __init__(self, df, transform, input='img_path', targets=['fat_g', 'protein_g', 'carb_g']):
+    def __init__(self, df, transform, input=INPUT, targets=TARGETS):
         self.transform = transform
         self.paths = df[input].tolist() # python list for fast indexing
         self.targets = df[targets].values.astype('float32') # numpy array for speed

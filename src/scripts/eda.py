@@ -7,7 +7,7 @@ import plotly.graph_objects as go
 from plotly.subplots import make_subplots
 from PIL import Image
 
-from src.constants import CSV_PATH, FIGURES_DIR
+from src.constants import CSV_PATH, FIGURES_DIR, TARGETS
 
 def parse_args():
     parser = argparse.ArgumentParser(description="Exploratory Data Analysis (EDA) tools for the food dataset.")
@@ -30,7 +30,7 @@ def load_dataset():
 
 def plot_distribution(df):
     print("Generating distribution plots...")
-    targets = ['fat_g', 'carb_g', 'prot_g', 'kcal']
+    targets = TARGETS
     
     fig = make_subplots(rows=2, cols=2, subplot_titles=targets)
     
